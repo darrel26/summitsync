@@ -31,8 +31,8 @@
 
 	let currentMemberId = $state('');
 	let isOwner = $state(false);
-	let showNamePrompt = $state(false);
-	let showUnlockModal = $state(false);
+	let namePromptModalEl = $state();
+	let unlockModalEl = $state();
 	let submittingName = $state(false);
 	let verifyingPin = $state(false);
 	let deletingTrip = $state(false);
@@ -71,9 +71,10 @@
 
 		if (storedId) {
 			currentMemberId = storedId;
-			showNamePrompt = false;
 		} else {
-			showNamePrompt = true;
+			setTimeout(() => {
+				namePromptModalEl?.showModal();
+			}, 50);
 		}
 
 		if (storedOwner === 'true') {
@@ -89,7 +90,7 @@
 			const member = await membersStore.create({ name, role: 'member' });
 			currentMemberId = member.id;
 			localStorage.setItem(`trip_member_${tripId}`, member.id);
-			showNamePrompt = false;
+			namePromptModalEl?.close();
 			showToast(`Welcome, ${name}!`, 'success');
 		} catch (err) {
 			console.error('Error creating member identity:', err);
@@ -105,7 +106,7 @@
 			if (trip && trip.pin && trip.pin === enteredPin) {
 				isOwner = true;
 				localStorage.setItem(`trip_is_owner_${tripId}`, 'true');
-				showUnlockModal = false;
+				unlockModalEl?.close();
 				showToast('Organizer permissions unlocked!', 'success');
 			} else {
 				showToast('Incorrect Organizer PIN', 'error');
@@ -243,7 +244,7 @@
 
 <div class="workspace-wrap">
 	{#if loadingTrip}
-		<div class="loading-state">
+		<div class="loading-state" role="status" aria-label="Loading trip workspace">
 			<div class="spinner"></div>
 			<p>Loading trip workspace...</p>
 		</div>
@@ -287,7 +288,7 @@
 				{#if !isOwner}
 					<button
 						class="btn btn-secondary btn-unlock"
-						onclick={() => (showUnlockModal = true)}
+						onclick={() => unlockModalEl?.showModal()}
 						title="Enter PIN for organizer access"
 					>
 						<KeyRound size={15} />
@@ -326,70 +327,71 @@
 		/>
 
 		<!-- Tab Content -->
-		<main class="workspace-content">
-			{#if activeTab === 'checklist'}
-				<ChecklistTab
-					{groupItems}
-					{personalItems}
-					{members}
-					{currentMemberId}
-					{isOwner}
-					onAddGroupItem={(data) => groupItemsStore.create(data)}
-					onUpdateGroupItem={(id, data) => groupItemsStore.updateRecord(id, data)}
-					onDeleteGroupItem={(id) => groupItemsStore.deleteRecord(id)}
-					onAddPersonalItem={(data) => personalItemsStore.create(data)}
-					onUpdatePersonalItem={(id, data) => personalItemsStore.updateRecord(id, data)}
-					onDeletePersonalItem={(id) => personalItemsStore.deleteRecord(id)}
-				/>
-			{:else if activeTab === 'members'}
-				<MembersTab
-					{members}
-					{currentMemberId}
-					{isOwner}
-					onAddMember={handleAddMember}
-					onRemoveMember={handleRemoveMember}
-				/>
-			{:else if activeTab === 'route'}
-				<RouteTab
-					{routeStops}
-					{isOwner}
-					onAddStop={(data) => routeStore.create(data)}
-					onUpdateStop={(id, data) => routeStore.updateRecord(id, data)}
-					onDeleteStop={(id) => routeStore.deleteRecord(id)}
-				/>
-			{:else if activeTab === 'itinerary'}
-				<ItineraryTab
-					{itineraryEntries}
-					{isOwner}
-					onAddEntry={(data) => itineraryStore.create(data)}
-					onUpdateEntry={(id, data) => itineraryStore.updateRecord(id, data)}
-					onDeleteEntry={(id) => itineraryStore.deleteRecord(id)}
-				/>
-			{/if}
+		<main id="main-content">
+			<div class="workspace-content" role="tabpanel" aria-labelledby="tab-{activeTab}">
+				{#if activeTab === 'checklist'}
+					<ChecklistTab
+						{groupItems}
+						{personalItems}
+						{members}
+						{currentMemberId}
+						{isOwner}
+						onAddGroupItem={(data) => groupItemsStore.create(data)}
+						onUpdateGroupItem={(id, data) => groupItemsStore.updateRecord(id, data)}
+						onDeleteGroupItem={(id) => groupItemsStore.deleteRecord(id)}
+						onAddPersonalItem={(data) => personalItemsStore.create(data)}
+						onUpdatePersonalItem={(id, data) => personalItemsStore.updateRecord(id, data)}
+						onDeletePersonalItem={(id) => personalItemsStore.deleteRecord(id)}
+					/>
+				{:else if activeTab === 'members'}
+					<MembersTab
+						{members}
+						{currentMemberId}
+						{isOwner}
+						onAddMember={handleAddMember}
+						onRemoveMember={handleRemoveMember}
+					/>
+				{:else if activeTab === 'route'}
+					<RouteTab
+						{routeStops}
+						{isOwner}
+						onAddStop={(data) => routeStore.create(data)}
+						onUpdateStop={(id, data) => routeStore.updateRecord(id, data)}
+						onDeleteStop={(id) => routeStore.deleteRecord(id)}
+						onReorderStops={handleReorderRoute}
+					/>
+				{:else if activeTab === 'itinerary'}
+					<ItineraryTab
+						{itineraryEntries}
+						{isOwner}
+						onAddEntry={(data) => itineraryStore.create(data)}
+						onUpdateEntry={(id, data) => itineraryStore.updateRecord(id, data)}
+						onDeleteEntry={(id) => itineraryStore.deleteRecord(id)}
+					/>
+				{/if}
+			</div>
 		</main>
 	{/if}
 </div>
 
-{#if showNamePrompt && !loadingTrip && trip}
-	<NamePromptModal
-		submitting={submittingName}
-		onSubmit={handleJoinName}
-	/>
-{/if}
+<NamePromptModal
+	bind:this={namePromptModalEl}
+	submitting={submittingName}
+	onSubmit={handleJoinName}
+/>
 
-{#if showUnlockModal}
-	<OrganizerUnlockModal
-		submitting={verifyingPin}
-		onUnlock={handleUnlockOrganizer}
-		onClose={() => (showUnlockModal = false)}
-	/>
-{/if}
+<OrganizerUnlockModal
+	bind:this={unlockModalEl}
+	submitting={verifyingPin}
+	onUnlock={handleUnlockOrganizer}
+	onClose={() => unlockModalEl?.close()}
+/>
 
 <style>
 	.workspace-wrap {
 		max-width: 1040px;
 		margin: 0 auto;
-		padding: 32px 24px 80px;
+		padding: calc(32px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px)) calc(80px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
 		width: 100%;
 	}
 
@@ -477,35 +479,6 @@
 		flex-wrap: wrap;
 	}
 
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 8px 14px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.875rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-secondary {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		color: var(--text-main);
-		box-shadow: var(--shadow-subtle);
-	}
-
-	.btn-secondary:hover {
-		background: var(--bg-subtle);
-		border-color: var(--border-hover);
-	}
-
 	.btn-unlock {
 		background: var(--color-primary-subtle);
 		border-color: var(--border-default);
@@ -570,5 +543,34 @@
 	.error-card p {
 		color: var(--text-secondary);
 		margin-bottom: 20px;
+	}
+
+	@media (max-width: 640px) {
+		.workspace-wrap {
+			padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(60px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+		}
+
+		.workspace-header {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 16px;
+		}
+
+		.header-left {
+			min-width: 0;
+		}
+
+		.trip-title {
+			font-size: 1.45rem;
+		}
+
+		.header-actions {
+			width: 100%;
+			flex-wrap: wrap;
+		}
+
+		.header-actions .btn {
+			flex: 1 1 auto;
+		}
 	}
 </style>

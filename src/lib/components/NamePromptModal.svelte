@@ -6,7 +6,16 @@
 		onSubmit
 	} = $props();
 
+	let dialogEl = $state();
 	let inputName = $state('');
+
+	export function showModal() {
+		dialogEl?.showModal();
+	}
+
+	export function close() {
+		dialogEl?.close();
+	}
 
 	function handleSubmit(e) {
 		e.preventDefault();
@@ -15,7 +24,13 @@
 	}
 </script>
 
-<div class="modal-backdrop" role="dialog" aria-modal="true">
+<dialog
+	bind:this={dialogEl}
+	class="modal-dialog"
+	onclose={() => {
+		// If user presses Escape without submitting, keep closed or keep state clean
+	}}
+>
 	<div class="modal-card">
 		<div class="modal-icon-wrap">
 			<Sparkles size={24} class="modal-icon" />
@@ -44,18 +59,19 @@
 			</button>
 		</form>
 	</div>
-</div>
+</dialog>
 
 <style>
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(15, 23, 42, 0.45);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.modal-dialog {
+		margin: auto;
+		border: none;
+		background: transparent;
 		padding: 20px;
-		z-index: 2000;
+		max-width: calc(100vw - 32px);
+	}
+
+	.modal-dialog::backdrop {
+		background: rgba(15, 23, 42, 0.45);
 		backdrop-filter: blur(5px);
 	}
 
@@ -140,33 +156,6 @@
 
 	.name-field:focus {
 		border-color: var(--border-focus);
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding: 11px 20px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.95rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
 	}
 
 	.btn-block {

@@ -8,7 +8,16 @@
 		onClose
 	} = $props();
 
+	let dialogEl = $state();
 	let enteredPin = $state('');
+
+	export function showModal() {
+		dialogEl?.showModal();
+	}
+
+	export function close() {
+		dialogEl?.close();
+	}
 
 	function handleSubmit(e) {
 		e.preventDefault();
@@ -17,20 +26,17 @@
 	}
 </script>
 
-<div
-	class="modal-backdrop"
-	role="dialog"
-	aria-modal="true"
-	onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-	onkeydown={(e) => { if (e.key === 'Escape') onClose(); }}
-	tabindex="-1"
+<dialog
+	bind:this={dialogEl}
+	class="modal-dialog"
+	onclose={onClose}
 >
 	<div class="modal-card">
 		<div class="modal-head">
 			<div class="icon-wrap">
 				<KeyRound size={22} />
 			</div>
-			<button type="button" class="btn-close" onclick={onClose} aria-label="Close modal">
+			<button type="button" class="btn-close" onclick={() => dialogEl?.close()} aria-label="Close modal">
 				<X size={18} />
 			</button>
 		</div>
@@ -51,7 +57,7 @@
 			</div>
 
 			<div class="modal-actions">
-				<button type="button" class="btn btn-secondary" onclick={onClose} disabled={submitting}>
+				<button type="button" class="btn btn-secondary" onclick={() => dialogEl?.close()} disabled={submitting}>
 					Cancel
 				</button>
 				<button type="submit" class="btn btn-primary" disabled={submitting || !enteredPin.trim()}>
@@ -63,18 +69,19 @@
 			</div>
 		</form>
 	</div>
-</div>
+</dialog>
 
 <style>
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(15, 23, 42, 0.45);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.modal-dialog {
+		margin: auto;
+		border: none;
+		background: transparent;
 		padding: 20px;
-		z-index: 2000;
+		max-width: calc(100vw - 32px);
+	}
+
+	.modal-dialog::backdrop {
+		background: rgba(15, 23, 42, 0.45);
 		backdrop-filter: blur(5px);
 	}
 
@@ -173,36 +180,5 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 10px;
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 9px 16px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.875rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.btn-secondary {
-		background: var(--bg-subtle);
-		color: var(--text-main);
 	}
 </style>

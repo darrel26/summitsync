@@ -331,14 +331,6 @@
 		box-shadow: var(--shadow-card);
 	}
 
-	.card {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 24px;
-		box-shadow: var(--shadow-card);
-	}
-
 	.card-header {
 		margin-bottom: 18px;
 	}
@@ -427,42 +419,6 @@
 
 	.input-notes {
 		flex: 1;
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 9px 16px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.875rem;
-		cursor: pointer;
-		white-space: nowrap;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.btn-secondary {
-		background: var(--bg-subtle);
-		color: var(--text-main);
-	}
-
-	.btn-sm {
-		padding: 6px 12px;
-		font-size: 0.8rem;
 	}
 
 	/* Day Filter Bar */
@@ -563,20 +519,6 @@
 	.event-actions {
 		display: flex;
 		gap: 2px;
-	}
-
-	.btn-icon {
-		color: var(--text-muted);
-		padding: 6px;
-		border-radius: var(--radius-sm);
-		display: grid;
-		place-content: center;
-		transition: all 0.15s ease;
-	}
-
-	.btn-icon:hover:not(:disabled) {
-		color: var(--text-main);
-		background: var(--bg-subtle);
 	}
 
 	.btn-icon:disabled {

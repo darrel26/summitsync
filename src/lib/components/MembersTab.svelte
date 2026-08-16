@@ -139,14 +139,6 @@
 		gap: 20px;
 	}
 
-	.card {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 24px;
-		box-shadow: var(--shadow-card);
-	}
-
 	.card-header {
 		margin-bottom: 18px;
 	}
@@ -198,32 +190,6 @@
 
 	.name-input:focus {
 		border-color: var(--border-focus);
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 9px 16px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.875rem;
-		transition: all 0.15s ease;
-		cursor: pointer;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
 	}
 
 	.members-grid {
@@ -303,7 +269,7 @@
 		font-size: 0.7rem;
 		font-weight: 700;
 		color: var(--color-emerald);
-		background: #ffffff;
+		background: var(--bg-surface);
 		padding: 1px 6px;
 		border-radius: var(--radius-full);
 		border: 1px solid var(--color-emerald-border);
@@ -326,5 +292,16 @@
 		padding: 36px 16px;
 		color: var(--text-secondary);
 		font-size: 0.9rem;
+	}
+
+	@media (max-width: 640px) {
+		.members-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.add-member-form {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 </style>

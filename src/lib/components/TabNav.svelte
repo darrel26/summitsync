@@ -25,12 +25,17 @@
 </script>
 
 <div class="tabs-nav-wrapper">
-	<nav class="tabs-nav" aria-label="Trip workspace views">
+	<div class="tabs-nav" role="tablist" aria-label="Trip workspace views">
 		{#each tabs as tab}
 			{@const Icon = tab.icon}
 			{@const count = tab.count()}
 			<button
+				id="tab-{tab.id}"
 				type="button"
+				role="tab"
+				aria-selected={activeTab === tab.id}
+				aria-controls="main-content"
+				aria-label={count > 0 ? `${tab.label} (${count})` : tab.label}
 				class="tab-item"
 				class:active={activeTab === tab.id}
 				onclick={() => onSelectTab(tab.id)}
@@ -42,7 +47,7 @@
 				{/if}
 			</button>
 		{/each}
-	</nav>
+	</div>
 </div>
 
 <style>
@@ -53,6 +58,7 @@
 		border-radius: var(--radius-lg);
 		padding: 4px;
 		box-shadow: var(--shadow-subtle);
+		position: relative;
 	}
 
 	.tabs-nav {
@@ -60,6 +66,8 @@
 		gap: 4px;
 		overflow-x: auto;
 		scrollbar-width: none;
+		-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+		mask-image: linear-gradient(to right, black 85%, transparent 100%);
 	}
 
 	.tabs-nav::-webkit-scrollbar {
@@ -87,7 +95,7 @@
 
 	.tab-item.active {
 		background: var(--color-primary);
-		color: #ffffff;
+		color: var(--bg-surface);
 		font-weight: 600;
 	}
 
@@ -102,6 +110,17 @@
 
 	.tab-item.active .tab-badge {
 		background: rgba(255, 255, 255, 0.2);
-		color: #ffffff;
+		color: var(--bg-surface);
+	}
+
+	@media (max-width: 480px) {
+		.tab-label {
+			display: none;
+		}
+
+		.tab-item {
+			padding: 9px 12px;
+			gap: 4px;
+		}
 	}
 </style>

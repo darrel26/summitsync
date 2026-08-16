@@ -7,10 +7,11 @@
 </script>
 
 <div class="app-layout">
+	<a href="#main-content" class="skip-link">Skip to main content</a>
 	{@render children()}
 
 	{#if $toast}
-		<div class="toast-wrapper">
+		<div class="toast-wrapper" aria-live="polite" role="status">
 			<div class="toast toast-{$toast.type}">
 				{#if $toast.type === 'success'}
 					<CheckCircle2 size={16} class="toast-icon" />

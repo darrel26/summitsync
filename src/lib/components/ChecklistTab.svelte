@@ -280,10 +280,10 @@
 											<option value={member.id}>{member.name}</option>
 										{/each}
 									</select>
-									<button type="button" class="btn-action-check" onclick={() => saveEditGroup(item.id)}>
+									<button type="button" class="btn-action-check" onclick={() => saveEditGroup(item.id)} aria-label="Save item changes">
 										<Check size={14} />
 									</button>
-									<button type="button" class="btn-action-cancel" onclick={() => (editingGroupId = null)}>
+									<button type="button" class="btn-action-cancel" onclick={() => (editingGroupId = null)} aria-label="Cancel editing item">
 										<X size={14} />
 									</button>
 								</div>
@@ -324,6 +324,7 @@
 									<button
 										type="button"
 										class="btn-icon"
+										aria-label="Edit item {item.name}"
 										title="Edit item"
 										onclick={() => startEditGroup(item)}
 									>
@@ -332,6 +333,7 @@
 									<button
 										type="button"
 										class="btn-icon btn-danger-hover"
+										aria-label="Delete item {item.name}"
 										title="Delete item"
 										onclick={() => handleDeleteGroup(item)}
 									>
@@ -395,6 +397,8 @@
 								type="submit"
 								class="btn-personal-add"
 								disabled={addingPersonal[member.id] || !(newPersonalNames[member.id] || '').trim()}
+								aria-label="Add personal item for {member.name}"
+								title="Add personal item"
 							>
 								<Plus size={14} />
 							</button>
@@ -426,6 +430,7 @@
 														type="button"
 														class="btn-action-check"
 														onclick={() => saveEditPersonal(pItem.id)}
+														aria-label="Save personal item"
 													>
 														<Check size={12} />
 													</button>
@@ -433,6 +438,7 @@
 														type="button"
 														class="btn-action-cancel"
 														onclick={() => (editingPersonalId = null)}
+														aria-label="Cancel editing personal item"
 													>
 														<X size={12} />
 													</button>
@@ -448,6 +454,7 @@
 													type="button"
 													class="btn-tiny"
 													onclick={() => startEditPersonal(pItem)}
+													aria-label="Edit {pItem.name}"
 													title="Edit"
 												>
 													<Pencil size={12} />
@@ -456,6 +463,7 @@
 													type="button"
 													class="btn-tiny btn-danger-hover"
 													onclick={() => handleDeletePersonal(pItem)}
+													aria-label="Delete {pItem.name}"
 													title="Delete"
 												>
 													<Trash2 size={12} />
@@ -478,14 +486,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 32px;
-	}
-
-	.card {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 24px;
-		box-shadow: var(--shadow-card);
 	}
 
 	.section-top,
@@ -597,26 +597,6 @@
 		text-align: center;
 	}
 
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 9px 16px;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.875rem;
-		cursor: pointer;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-	}
-
 	/* Group Items List */
 	.group-items-list {
 		display: flex;
@@ -641,7 +621,6 @@
 
 	.item-row.is-packed {
 		background: var(--bg-subtle);
-		opacity: 0.65;
 	}
 
 	.item-row.is-packed .item-name {
@@ -753,18 +732,6 @@
 	.item-right {
 		display: flex;
 		gap: 4px;
-	}
-
-	.btn-icon {
-		color: var(--text-muted);
-		padding: 6px;
-		border-radius: var(--radius-sm);
-		transition: all 0.15s ease;
-	}
-
-	.btn-icon:hover {
-		color: var(--text-main);
-		background: var(--bg-subtle);
 	}
 
 	.btn-danger-hover:hover {
@@ -890,7 +857,7 @@
 	}
 
 	.personal-item-row.is-packed {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 
 	.personal-item-row.is-packed .personal-name {
@@ -953,5 +920,16 @@
 		padding: 16px 0;
 		color: var(--text-muted);
 		font-size: 0.8rem;
+	}
+
+	@media (max-width: 640px) {
+		.add-group-form {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.personal-grid {
+			grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		}
 	}
 </style>

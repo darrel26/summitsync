@@ -20,7 +20,7 @@
 	let trips = $state([]);
 	let tripStats = $state({}); // keyed by tripId: { membersCount, itemsCount, stopsCount }
 	let loading = $state(true);
-	let showModal = $state(false);
+	let modalEl = $state();
 	let creating = $state(false);
 
 	let tripName = $state('');
@@ -137,7 +137,7 @@
 			localStorage.setItem(`trip_is_owner_${tripRecord.id}`, 'true');
 
 			showToast('Trip created successfully as Organizer!', 'success');
-			showModal = false;
+			modalEl?.close();
 			goto(`/trip/${tripRecord.id}`);
 		} catch (err) {
 			console.error('Error creating trip:', err);
@@ -154,7 +154,7 @@
 		startDate = '';
 		endDate = '';
 		tripDescription = '';
-		showModal = false;
+		modalEl?.close();
 	}
 
 	onMount(() => {
@@ -179,14 +179,14 @@
 			</div>
 		</div>
 
-		<button class="btn btn-primary" onclick={() => (showModal = true)}>
+		<button class="btn btn-primary" onclick={() => modalEl?.showModal()}>
 			<Plus size={16} />
 			<span>New Trip</span>
 		</button>
 	</header>
 
 	<!-- Main Container -->
-	<main class="content-container">
+	<main id="main-content" class="content-container">
 		<div class="hero-header">
 			<div class="hero-text-wrap">
 				<h1 class="hero-title">Adventures & Expeditions</h1>
@@ -202,7 +202,7 @@
 		</div>
 
 		{#if loading}
-			<div class="loading-state">
+			<div class="loading-state" role="status" aria-label="Loading trips">
 				<div class="spinner"></div>
 				<p>Loading trips...</p>
 			</div>
@@ -215,7 +215,7 @@
 				<p class="empty-desc">
 					Create your first trip to organize packing gear, checkpoints, and schedules together with your group.
 				</p>
-				<button class="btn btn-primary" onclick={() => (showModal = true)}>
+				<button class="btn btn-primary" onclick={() => modalEl?.showModal()}>
 					<Plus size={16} />
 					<span>Create Your First Trip</span>
 				</button>
@@ -276,152 +276,147 @@
 </div>
 
 <!-- Modal: New Trip with Date Picker -->
-{#if showModal}
-	<div
-		class="modal-overlay"
-		role="dialog"
-		aria-modal="true"
-		onclick={(e) => { if (e.target === e.currentTarget) resetForm(); }}
-		onkeydown={(e) => { if (e.key === 'Escape') resetForm(); }}
-		tabindex="-1"
-	>
-		<div class="modal-window">
-			<div class="modal-head">
-				<div>
-					<h3 class="modal-title">Create New Trip</h3>
-					<p class="modal-sub">Start planning gear, trail routes, and day schedules.</p>
-				</div>
-				<button class="btn-close" onclick={resetForm} aria-label="Close modal">
-					<X size={18} />
-				</button>
+<dialog
+	bind:this={modalEl}
+	class="modal-dialog"
+	onclose={resetForm}
+>
+	<div class="modal-window">
+		<div class="modal-head">
+			<div>
+				<h3 class="modal-title">Create New Trip</h3>
+				<p class="modal-sub">Start planning gear, trail routes, and day schedules.</p>
+			</div>
+			<button class="btn-close" onclick={() => modalEl?.close()} aria-label="Close modal">
+				<X size={18} />
+			</button>
+		</div>
+
+		<form onsubmit={handleCreateTrip} class="modal-form">
+			<!-- Trip Name -->
+			<div class="input-group">
+				<label for="trip-name">Trip Name <span class="required">*</span></label>
+				<input
+					type="text"
+					id="trip-name"
+					bind:value={tripName}
+					placeholder="e.g., Mount Gede Weekend Expedition"
+					required
+				/>
 			</div>
 
-			<form onsubmit={handleCreateTrip} class="modal-form">
-				<!-- Trip Name -->
+			<!-- Organizer Details -->
+			<div class="organizer-inputs-grid">
 				<div class="input-group">
-					<label for="trip-name">Trip Name <span class="required">*</span></label>
+					<label for="organizer-name">Your Name (Organizer) <span class="required">*</span></label>
 					<input
 						type="text"
-						id="trip-name"
-						bind:value={tripName}
-						placeholder="e.g., Mount Gede Weekend Expedition"
+						id="organizer-name"
+						bind:value={organizerName}
+						placeholder="e.g., Dion"
 						required
 					/>
 				</div>
 
-				<!-- Organizer Details -->
-				<div class="organizer-inputs-grid">
-					<div class="input-group">
-						<label for="organizer-name">Your Name (Organizer) <span class="required">*</span></label>
-						<input
-							type="text"
-							id="organizer-name"
-							bind:value={organizerName}
-							placeholder="e.g., Dion"
-							required
-						/>
-					</div>
+				<div class="input-group">
+					<label for="organizer-pin">Organizer PIN <span class="required">*</span></label>
+					<input
+						type="password"
+						id="organizer-pin"
+						bind:value={organizerPin}
+						placeholder="e.g. 1234"
+						maxlength="10"
+						required
+					/>
+				</div>
+			</div>
 
-					<div class="input-group">
-						<label for="organizer-pin">Organizer PIN <span class="required">*</span></label>
-						<input
-							type="password"
-							id="organizer-pin"
-							bind:value={organizerPin}
-							placeholder="e.g. 1234"
-							maxlength="10"
-							required
-						/>
+			<!-- Date Selection Mode (Range or Single Date) -->
+			<div class="date-picker-section">
+				<div class="date-picker-header">
+					<label class="date-label">
+						<Calendar size={14} />
+						<span>Trip Dates (Optional)</span>
+					</label>
+
+					<div class="date-mode-toggle">
+						<button
+							type="button"
+							class="mode-btn"
+							class:active={isRange}
+							onclick={() => (isRange = true)}
+						>
+							Date Range
+						</button>
+						<button
+							type="button"
+							class="mode-btn"
+							class:active={!isRange}
+							onclick={() => { isRange = false; endDate = ''; }}
+						>
+							Single Day
+						</button>
 					</div>
 				</div>
 
-				<!-- Date Selection Mode (Range or Single Date) -->
-				<div class="date-picker-section">
-					<div class="date-picker-header">
-						<label class="date-label">
-							<Calendar size={14} />
-							<span>Trip Dates (Optional)</span>
-						</label>
-
-						<div class="date-mode-toggle">
-							<button
-								type="button"
-								class="mode-btn"
-								class:active={isRange}
-								onclick={() => (isRange = true)}
-							>
-								Date Range
-							</button>
-							<button
-								type="button"
-								class="mode-btn"
-								class:active={!isRange}
-								onclick={() => { isRange = false; endDate = ''; }}
-							>
-								Single Day
-							</button>
-						</div>
+				<div class="date-inputs-grid" class:is-range={isRange}>
+					<div class="date-field-wrap">
+						<span class="sub-label">{isRange ? 'Start Date' : 'Date'}</span>
+						<input
+							type="date"
+							bind:value={startDate}
+							class="input-date"
+						/>
 					</div>
 
-					<div class="date-inputs-grid" class:is-range={isRange}>
+					{#if isRange}
 						<div class="date-field-wrap">
-							<span class="sub-label">{isRange ? 'Start Date' : 'Date'}</span>
+							<span class="sub-label">End Date</span>
 							<input
 								type="date"
-								bind:value={startDate}
+								bind:value={endDate}
+								min={startDate || undefined}
 								class="input-date"
 							/>
 						</div>
-
-						{#if isRange}
-							<div class="date-field-wrap">
-								<span class="sub-label">End Date</span>
-								<input
-									type="date"
-									bind:value={endDate}
-									min={startDate || undefined}
-									class="input-date"
-								/>
-							</div>
-						{/if}
-					</div>
+					{/if}
 				</div>
+			</div>
 
-				<!-- Description / Notes -->
-				<div class="input-group">
-					<label for="trip-desc">Overview & Meeting Details (Optional)</label>
-					<textarea
-						id="trip-desc"
-						rows="3"
-						bind:value={tripDescription}
-						placeholder="Add trail checkpoint, meeting point, or logistics notes..."
-					></textarea>
-				</div>
+			<!-- Description / Notes -->
+			<div class="input-group">
+				<label for="trip-desc">Overview & Meeting Details (Optional)</label>
+				<textarea
+					id="trip-desc"
+					rows="3"
+					bind:value={tripDescription}
+					placeholder="Add trail checkpoint, meeting point, or logistics notes..."
+				></textarea>
+			</div>
 
-				<!-- Actions -->
-				<div class="modal-footer">
-					<button
-						type="button"
-						class="btn btn-secondary"
-						onclick={resetForm}
-						disabled={creating}
-					>
-						Cancel
-					</button>
-					<button type="submit" class="btn btn-primary" disabled={creating || !tripName.trim()}>
-						{creating ? 'Creating...' : 'Create Expedition'}
-					</button>
-				</div>
-			</form>
-		</div>
+			<!-- Actions -->
+			<div class="modal-footer">
+				<button
+					type="button"
+					class="btn btn-secondary"
+					onclick={() => modalEl?.close()}
+					disabled={creating}
+				>
+					Cancel
+				</button>
+				<button type="submit" class="btn btn-primary" disabled={creating || !tripName.trim()}>
+					{creating ? 'Creating...' : 'Create Expedition'}
+				</button>
+			</div>
+		</form>
 	</div>
-{/if}
+</dialog>
 
 <style>
 	.page-wrap {
 		max-width: 1060px;
 		margin: 0 auto;
-		padding: 32px 24px 80px;
+		padding: calc(32px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px)) calc(80px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
 		width: 100%;
 	}
 
@@ -446,7 +441,7 @@
 		height: 38px;
 		border-radius: var(--radius-md);
 		background: var(--color-primary);
-		color: #ffffff;
+		color: var(--bg-surface);
 		display: grid;
 		place-content: center;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
@@ -510,43 +505,6 @@
 
 	:global(.pill-sparkle) {
 		color: #d97706;
-	}
-
-	/* Buttons */
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 9px 16px;
-		border-radius: var(--radius-md);
-		font-size: 0.875rem;
-		font-weight: 600;
-		transition: all 0.15s ease;
-		cursor: pointer;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
-		transform: translateY(-1px);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.btn-secondary {
-		background: var(--bg-subtle);
-		color: var(--text-main);
-	}
-
-	.btn-secondary:hover:not(:disabled) {
-		background: var(--border-default);
 	}
 
 	.btn-close {
@@ -768,15 +726,16 @@
 	}
 
 	/* Modal & Date Picker Form */
-	.modal-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(15, 23, 42, 0.45);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.modal-dialog {
+		margin: auto;
+		border: none;
+		background: transparent;
 		padding: 20px;
-		z-index: 1000;
+		max-width: calc(100vw - 32px);
+	}
+
+	.modal-dialog::backdrop {
+		background: rgba(15, 23, 42, 0.45);
 		backdrop-filter: blur(5px);
 	}
 
@@ -888,7 +847,7 @@
 
 	.date-mode-toggle {
 		display: flex;
-		background: #ffffff;
+		background: var(--bg-surface);
 		border: 1px solid var(--border-default);
 		border-radius: var(--radius-sm);
 		padding: 2px;
@@ -906,7 +865,7 @@
 
 	.mode-btn.active {
 		background: var(--color-primary);
-		color: #ffffff;
+		color: var(--bg-surface);
 	}
 
 	.date-inputs-grid {
@@ -936,7 +895,7 @@
 		padding: 8px 10px;
 		border: 1px solid var(--border-default);
 		border-radius: var(--radius-sm);
-		background: #ffffff;
+		background: var(--bg-surface);
 		font-size: 0.85rem;
 		font-family: inherit;
 		outline: none;
@@ -952,5 +911,38 @@
 		justify-content: flex-end;
 		gap: 10px;
 		margin-top: 24px;
+	}
+
+	@media (max-width: 640px) {
+		.page-wrap {
+			padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(60px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+		}
+
+		.top-bar {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 16px;
+			margin-bottom: 24px;
+		}
+
+		.hero-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 12px;
+		}
+
+		.hero-title {
+			font-size: 1.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.organizer-inputs-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.date-inputs-grid.is-range {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
