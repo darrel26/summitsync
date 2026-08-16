@@ -464,11 +464,19 @@
 		.step-body {
 			flex-direction: column;
 			align-items: flex-start;
-			gap: 10px;
+			gap: 12px;
+			padding: 14px;
 		}
 
 		.step-actions {
 			align-self: flex-end;
+			gap: 6px;
+		}
+
+		.step-actions .btn-icon {
+			min-width: 40px;
+			min-height: 40px;
+			padding: 10px;
 		}
 	}
 </style>

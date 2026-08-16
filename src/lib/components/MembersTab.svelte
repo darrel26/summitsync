@@ -5,7 +5,8 @@
 		Trash2,
 		Users,
 		UserCheck,
-		Crown
+		Crown,
+		ArrowRightLeft
 	} from 'lucide-svelte';
 
 	let {
@@ -13,7 +14,8 @@
 		currentMemberId = '',
 		isOwner = false,
 		onAddMember,
-		onRemoveMember
+		onRemoveMember,
+		onSwitchIdentity
 	} = $props();
 
 	let newMemberName = $state('');
@@ -114,17 +116,31 @@
 							</div>
 						</div>
 
-						{#if isOwner && !isMemberOwner}
-							<button
-								type="button"
-								class="btn-icon"
-								title="Remove member"
-								onclick={() => handleRemove(member)}
-								aria-label="Remove {member.name}"
-							>
-								<Trash2 size={15} />
-							</button>
-						{/if}
+						<div class="member-card-actions">
+							{#if isSelf && onSwitchIdentity}
+								<button
+									type="button"
+									class="btn-icon btn-switch"
+									title="Switch Identity"
+									onclick={onSwitchIdentity}
+									aria-label="Switch your identity"
+								>
+									<ArrowRightLeft size={14} />
+								</button>
+							{/if}
+
+							{#if isOwner && !isMemberOwner}
+								<button
+									type="button"
+									class="btn-icon"
+									title="Remove member"
+									onclick={() => handleRemove(member)}
+									aria-label="Remove {member.name}"
+								>
+									<Trash2 size={15} />
+								</button>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -147,6 +163,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
 	}
 
 	.card-title {
@@ -185,7 +203,7 @@
 		border: 1px solid var(--border-default);
 		border-radius: var(--radius-md);
 		outline: none;
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 	}
 
 	.name-input:focus {
@@ -207,6 +225,7 @@
 		border-radius: var(--radius-md);
 		background: var(--bg-surface);
 		transition: border-color 0.15s ease;
+		min-height: 54px;
 	}
 
 	.member-card.is-self {
@@ -218,6 +237,7 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		min-width: 0;
 	}
 
 	.avatar {
@@ -230,6 +250,7 @@
 		font-size: 0.85rem;
 		display: grid;
 		place-content: center;
+		flex-shrink: 0;
 	}
 
 	.member-card.is-self .avatar {
@@ -241,6 +262,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		flex-wrap: wrap;
 	}
 
 	.member-name {
@@ -275,16 +297,31 @@
 		border: 1px solid var(--color-emerald-border);
 	}
 
+	.member-card-actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
 	.btn-icon {
 		color: var(--text-muted);
-		padding: 6px;
+		padding: 8px;
 		border-radius: var(--radius-sm);
 		transition: all 0.15s ease;
+		display: grid;
+		place-content: center;
+		min-width: 36px;
+		min-height: 36px;
 	}
 
 	.btn-icon:hover {
 		color: var(--color-danger);
 		background: var(--color-danger-light);
+	}
+
+	.btn-switch:hover {
+		color: var(--color-emerald);
+		background: var(--color-emerald-light);
 	}
 
 	.empty-state {
@@ -302,6 +339,10 @@
 		.add-member-form {
 			flex-direction: column;
 			align-items: stretch;
+		}
+
+		.add-member-form .btn {
+			min-height: 44px;
 		}
 	}
 </style>

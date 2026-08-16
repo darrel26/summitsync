@@ -210,6 +210,12 @@ a:focus-visible {
 }
 
 @media (max-width: 768px) {
+	input:not([type="checkbox"]):not([type="radio"]),
+	select,
+	textarea {
+		font-size: 16px !important;
+	}
+
 	.btn-icon,
 	.btn-tiny,
 	.btn-personal-add,

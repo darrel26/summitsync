@@ -428,6 +428,13 @@
 		margin-bottom: 16px;
 		overflow-x: auto;
 		padding-bottom: 4px;
+		scrollbar-width: none;
+		-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+		mask-image: linear-gradient(to right, black 85%, transparent 100%);
+	}
+
+	.day-filter-bar::-webkit-scrollbar {
+		display: none;
 	}
 
 	.day-filter-pill {
@@ -570,5 +577,59 @@
 		padding: 36px 16px;
 		color: var(--text-secondary);
 		font-size: 0.9rem;
+	}
+
+	@media (max-width: 640px) {
+		.event-card {
+			flex-direction: column;
+			align-items: flex-start;
+			padding: 14px;
+			gap: 12px;
+		}
+
+		.time-col {
+			min-width: auto;
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.event-actions {
+			align-self: flex-end;
+			gap: 6px;
+		}
+
+		.event-actions .btn-icon {
+			min-width: 40px;
+			min-height: 40px;
+			padding: 10px;
+		}
+
+		.day-filter-pill {
+			min-height: 38px;
+			display: inline-flex;
+			align-items: center;
+			padding: 6px 14px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.edit-top-row {
+			flex-direction: column;
+		}
+
+		.edit-day-num,
+		.edit-time-str,
+		.edit-title-str {
+			width: 100%;
+		}
+
+		.notes-row {
+			flex-direction: column;
+		}
+
+		.notes-row .btn {
+			width: 100%;
+		}
 	}
 </style>

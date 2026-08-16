@@ -19,8 +19,8 @@
 	const tabs = [
 		{ id: 'checklist', label: 'Checklist', icon: CheckSquare, count: () => groupItemCount + personalItemCount },
 		{ id: 'members', label: 'Members', icon: Users, count: () => memberCount },
-		{ id: 'route', label: 'Route & Stops', icon: MapPin, count: () => routeCount },
-		{ id: 'itinerary', label: 'Itinerary', icon: CalendarDays, count: () => itineraryCount }
+		{ id: 'route', label: 'Route', icon: MapPin, count: () => routeCount },
+		{ id: 'itinerary', label: 'Schedule', icon: CalendarDays, count: () => itineraryCount }
 	];
 </script>
 
@@ -40,11 +40,13 @@
 				class:active={activeTab === tab.id}
 				onclick={() => onSelectTab(tab.id)}
 			>
-				<Icon size={16} strokeWidth={activeTab === tab.id ? 2.2 : 1.8} />
+				<div class="tab-icon-wrap">
+					<Icon size={18} strokeWidth={activeTab === tab.id ? 2.4 : 1.8} />
+					{#if count > 0}
+						<span class="tab-badge">{count}</span>
+					{/if}
+				</div>
 				<span class="tab-label">{tab.label}</span>
-				{#if count > 0}
-					<span class="tab-badge">{count}</span>
-				{/if}
 			</button>
 		{/each}
 	</div>
@@ -62,65 +64,122 @@
 	}
 
 	.tabs-nav {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
 		gap: 4px;
-		overflow-x: auto;
-		scrollbar-width: none;
-		-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-		mask-image: linear-gradient(to right, black 85%, transparent 100%);
-	}
-
-	.tabs-nav::-webkit-scrollbar {
-		display: none;
+		width: 100%;
 	}
 
 	.tab-item {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 8px;
-		padding: 9px 16px;
+		padding: 10px 16px;
 		border-radius: var(--radius-md);
 		color: var(--text-secondary);
 		font-size: 0.875rem;
-		font-weight: 500;
-		transition: all 0.15s ease;
-		white-space: nowrap;
-		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+		position: relative;
+		user-select: none;
+		border: none;
+		background: transparent;
 	}
 
-	.tab-item:hover {
+	.tab-item:hover:not(.active) {
 		color: var(--text-main);
-		background: var(--bg-subtle);
+		background-color: var(--bg-subtle);
 	}
 
 	.tab-item.active {
-		background: var(--color-primary);
-		color: var(--bg-surface);
-		font-weight: 600;
+		color: var(--text-main);
+		background-color: var(--bg-surface);
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+	}
+
+	.tab-icon-wrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.tab-label {
+		white-space: nowrap;
 	}
 
 	.tab-badge {
-		font-size: 0.725rem;
-		font-weight: 600;
-		padding: 1px 7px;
+		position: absolute;
+		top: -6px;
+		right: -10px;
+		background-color: var(--color-primary);
+		color: #ffffff;
+		font-size: 0.65rem;
+		font-weight: 700;
+		height: 16px;
+		min-width: 16px;
+		padding: 0 4px;
 		border-radius: var(--radius-full);
-		background: var(--bg-subtle);
-		color: var(--text-secondary);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+		font-family: var(--font-mono);
 	}
 
-	.tab-item.active .tab-badge {
-		background: rgba(255, 255, 255, 0.2);
-		color: var(--bg-surface);
-	}
+	/* Fixed Bottom Nav for Mobile */
+	@media (max-width: 640px) {
+		.tabs-nav-wrapper {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			margin-bottom: 0;
+			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+			border-left: none;
+			border-right: none;
+			border-bottom: none;
+			background: var(--bg-surface);
+			z-index: 100;
+			padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+			box-shadow: 0 -4px 16px -2px rgba(0, 0, 0, 0.08);
+		}
 
-	@media (max-width: 480px) {
-		.tab-label {
-			display: none;
+		.tabs-nav {
+			display: flex;
+			justify-content: space-around;
+			gap: 2px;
 		}
 
 		.tab-item {
-			padding: 9px 12px;
-			gap: 4px;
+			flex: 1;
+			flex-direction: column;
+			gap: 3px;
+			padding: 6px 2px;
+			min-height: 52px;
+			border-radius: var(--radius-md);
+		}
+
+		.tab-label {
+			font-size: 0.6875rem;
+			font-weight: 600;
+			letter-spacing: -0.01em;
+		}
+
+		.tab-badge {
+			top: -4px;
+			right: -8px;
+			font-size: 0.6rem;
+			height: 14px;
+			min-width: 14px;
+			padding: 0 3px;
+		}
+
+		.tab-item.active {
+			background-color: var(--bg-subtle);
+			color: var(--color-primary);
+			box-shadow: none;
 		}
 	}
 </style>

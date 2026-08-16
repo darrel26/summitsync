@@ -1,9 +1,11 @@
 <script>
-	import { Sparkles, User, ArrowRight } from 'lucide-svelte';
+	import { Sparkles, User, ArrowRight, UserCheck } from 'lucide-svelte';
 
 	let {
+		members = [],
 		submitting = false,
-		onSubmit
+		onSubmit,
+		onClaim
 	} = $props();
 
 	let dialogEl = $state();
@@ -22,21 +24,50 @@
 		if (!inputName.trim()) return;
 		onSubmit(inputName.trim());
 	}
+
+	function handleSelectMember(member) {
+		if (onClaim) {
+			onClaim(member);
+		} else {
+			onSubmit(member.name);
+		}
+	}
 </script>
 
 <dialog
 	bind:this={dialogEl}
 	class="modal-dialog"
-	onclose={() => {
-		// If user presses Escape without submitting, keep closed or keep state clean
-	}}
+	onclose={() => {}}
 >
 	<div class="modal-card">
 		<div class="modal-icon-wrap">
 			<Sparkles size={24} class="modal-icon" />
 		</div>
 		<h2 class="modal-title">Join Trip Workspace</h2>
-		<p class="modal-desc">Enter your name so your group knows what items you're bringing.</p>
+		<p class="modal-desc">Select your profile or enter your name to collaborate.</p>
+
+		{#if members && members.length > 0}
+			<div class="roster-section">
+				<span class="roster-label">Are you on the roster?</span>
+				<div class="roster-chips">
+					{#each members as member}
+						<button
+							type="button"
+							class="roster-chip"
+							onclick={() => handleSelectMember(member)}
+							disabled={submitting}
+						>
+							<div class="chip-avatar">{member.name.charAt(0).toUpperCase()}</div>
+							<span class="chip-name">{member.name}</span>
+							<UserCheck size={13} class="chip-check" />
+						</button>
+					{/each}
+				</div>
+				<div class="divider">
+					<span>or join as new</span>
+				</div>
+			</div>
+		{/if}
 
 		<form onsubmit={handleSubmit} class="join-form">
 			<div class="input-wrapper">
@@ -78,9 +109,9 @@
 	.modal-card {
 		background: var(--bg-surface);
 		width: 100%;
-		max-width: 400px;
+		max-width: 420px;
 		border-radius: var(--radius-lg);
-		padding: 32px 24px;
+		padding: 28px 24px;
 		text-align: center;
 		box-shadow: var(--shadow-modal);
 		border: 1px solid var(--border-default);
@@ -106,7 +137,7 @@
 		color: var(--text-main);
 		display: grid;
 		place-content: center;
-		margin: 0 auto 16px;
+		margin: 0 auto 14px;
 	}
 
 	.modal-title {
@@ -120,8 +151,93 @@
 	.modal-desc {
 		font-size: 0.875rem;
 		color: var(--text-secondary);
-		margin-bottom: 24px;
+		margin-bottom: 20px;
 		line-height: 1.5;
+	}
+
+	.roster-section {
+		margin-bottom: 18px;
+		text-align: left;
+	}
+
+	.roster-label {
+		display: block;
+		font-size: 0.775rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		margin-bottom: 8px;
+	}
+
+	.roster-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		max-height: 140px;
+		overflow-y: auto;
+		padding: 2px;
+	}
+
+	.roster-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px 6px 6px;
+		border-radius: var(--radius-full);
+		background: var(--bg-subtle);
+		border: 1px solid var(--border-default);
+		color: var(--text-main);
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		min-height: 36px;
+	}
+
+	.roster-chip:hover {
+		border-color: var(--color-emerald-border);
+		background: var(--color-emerald-light);
+		color: var(--color-emerald);
+	}
+
+	.chip-avatar {
+		width: 24px;
+		height: 24px;
+		border-radius: var(--radius-full);
+		background: var(--bg-surface);
+		display: grid;
+		place-content: center;
+		font-size: 0.75rem;
+		font-weight: 700;
+		border: 1px solid var(--border-default);
+	}
+
+	:global(.chip-check) {
+		color: var(--color-emerald);
+		opacity: 0.7;
+	}
+
+	.divider {
+		display: flex;
+		align-items: center;
+		text-align: center;
+		margin: 16px 0 12px;
+		color: var(--text-muted);
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.divider::before,
+	.divider::after {
+		content: '';
+		flex: 1;
+		border-bottom: 1px solid var(--border-default);
+	}
+
+	.divider span {
+		padding: 0 10px;
 	}
 
 	.join-form {
@@ -148,7 +264,7 @@
 		padding: 11px 14px 11px 40px;
 		border: 1px solid var(--border-default);
 		border-radius: var(--radius-md);
-		font-size: 0.95rem;
+		font-size: 1rem;
 		background: var(--bg-surface);
 		outline: none;
 		transition: border-color 0.15s ease;
@@ -160,5 +276,6 @@
 
 	.btn-block {
 		width: 100%;
+		min-height: 44px;
 	}
 </style>

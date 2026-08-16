@@ -12,7 +12,8 @@
 		Calendar,
 		KeyRound,
 		Crown,
-		ShieldCheck
+		ShieldCheck,
+		UserCheck
 	} from 'lucide-svelte';
 
 	import TabNav from '$lib/components/TabNav.svelte';
@@ -87,17 +88,41 @@
 	async function handleJoinName(name) {
 		submittingName = true;
 		try {
-			const member = await membersStore.create({ name, role: 'member' });
-			currentMemberId = member.id;
-			localStorage.setItem(`trip_member_${tripId}`, member.id);
-			namePromptModalEl?.close();
-			showToast(`Welcome, ${name}!`, 'success');
+			// Check if member already exists on this trip
+			const trimmedName = name.trim();
+			const existing = members.find(
+				(m) => m.name.toLowerCase() === trimmedName.toLowerCase()
+			);
+
+			if (existing) {
+				currentMemberId = existing.id;
+				localStorage.setItem(`trip_member_${tripId}`, existing.id);
+				namePromptModalEl?.close();
+				showToast(`Welcome back, ${existing.name}!`, 'success');
+			} else {
+				const member = await membersStore.create({ name: trimmedName, role: 'member' });
+				currentMemberId = member.id;
+				localStorage.setItem(`trip_member_${tripId}`, member.id);
+				namePromptModalEl?.close();
+				showToast(`Welcome, ${trimmedName}!`, 'success');
+			}
 		} catch (err) {
-			console.error('Error creating member identity:', err);
+			console.error('Error handling member identity:', err);
 			showToast('Failed to save your name', 'error');
 		} finally {
 			submittingName = false;
 		}
+	}
+
+	function handleClaimMember(member) {
+		currentMemberId = member.id;
+		localStorage.setItem(`trip_member_${tripId}`, member.id);
+		namePromptModalEl?.close();
+		showToast(`Connected as ${member.name}`, 'success');
+	}
+
+	function handleSwitchIdentity() {
+		namePromptModalEl?.showModal();
 	}
 
 	async function handleUnlockOrganizer(enteredPin) {
@@ -350,6 +375,7 @@
 						{isOwner}
 						onAddMember={handleAddMember}
 						onRemoveMember={handleRemoveMember}
+						onSwitchIdentity={handleSwitchIdentity}
 					/>
 				{:else if activeTab === 'route'}
 					<RouteTab
@@ -376,8 +402,10 @@
 
 <NamePromptModal
 	bind:this={namePromptModalEl}
+	{members}
 	submitting={submittingName}
 	onSubmit={handleJoinName}
+	onClaim={handleClaimMember}
 />
 
 <OrganizerUnlockModal
@@ -547,13 +575,14 @@
 
 	@media (max-width: 640px) {
 		.workspace-wrap {
-			padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(60px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+			padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(88px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
 		}
 
 		.workspace-header {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 16px;
+			gap: 14px;
+			margin-bottom: 18px;
 		}
 
 		.header-left {
@@ -561,16 +590,22 @@
 		}
 
 		.trip-title {
-			font-size: 1.45rem;
+			font-size: 1.35rem;
+			word-break: break-word;
 		}
 
 		.header-actions {
 			width: 100%;
-			flex-wrap: wrap;
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+			gap: 8px;
 		}
 
 		.header-actions .btn {
-			flex: 1 1 auto;
+			min-height: 44px;
+			justify-content: center;
+			font-size: 0.85rem;
+			padding: 8px 12px;
 		}
 	}
 </style>

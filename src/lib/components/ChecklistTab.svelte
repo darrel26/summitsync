@@ -43,6 +43,16 @@
 	let editingPersonalId = $state(null);
 	let editPersonalName = $state('');
 
+	let orderedMembers = $derived(
+		!currentMemberId
+			? members
+			: [...members].sort((a, b) => {
+					if (a.id === currentMemberId) return -1;
+					if (b.id === currentMemberId) return 1;
+					return 0;
+			  })
+	);
+
 	// Group Item actions
 	async function handleAddGroup(e) {
 		e.preventDefault();
@@ -368,7 +378,7 @@
 			</div>
 		{:else}
 			<div class="personal-grid">
-				{#each members as member (member.id)}
+				{#each orderedMembers as member (member.id)}
 					{@const memberItems = personalItems.filter((i) => i.member === member.id)}
 					{@const packedCount = memberItems.filter((i) => i.packed).length}
 					{@const isSelf = member.id === currentMemberId}
@@ -929,7 +939,61 @@
 		}
 
 		.personal-grid {
-			grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+			grid-template-columns: 1fr;
+		}
+
+		.item-row {
+			padding: 12px 14px;
+		}
+
+		.btn-icon {
+			min-width: 40px;
+			min-height: 40px;
+			padding: 10px;
+		}
+
+		.btn-tiny {
+			min-width: 36px;
+			min-height: 36px;
+			padding: 8px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.item-left {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			grid-template-rows: auto auto;
+			row-gap: 4px;
+			column-gap: 10px;
+			align-items: center;
+		}
+
+		.item-text-wrap {
+			grid-column: 2;
+			grid-row: 1;
+		}
+
+		.assignee-wrap {
+			grid-column: 2;
+			grid-row: 2;
+			margin-left: 0;
+			margin-right: 0;
+		}
+
+		.edit-group-row {
+			grid-column: 1 / -1;
+			flex-wrap: wrap;
+		}
+
+		.edit-input-field {
+			flex: 1 1 100%;
+		}
+
+		.section-top,
+		.section-top-clean {
+			flex-wrap: wrap;
+			gap: 8px;
 		}
 	}
 </style>
