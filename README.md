@@ -1,6 +1,6 @@
-# 🏔️ Group Trip Planner
+# 🏔️ SummitSync — Group Trip Planner
 
-A fast, real-time collaborative web application designed for group hiking, camping, and outdoor trips (such as Mount Gede). No accounts, passwords, or login required — just share the trip link and start planning together.
+A fast, real-time collaborative web application designed for group hiking, camping, and outdoor adventures. No accounts, passwords, or login required — just share the trip link and start planning together.
 
 ## ✨ Features
 

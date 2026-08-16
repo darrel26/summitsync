@@ -35,7 +35,7 @@ This guide details how to deploy SummitSync to production using **Vercel** for t
 ### Step 1: Create Project on Railway
 1. Go to [Railway.app](https://railway.app/) and log in with GitHub.
 2. Click **New Project** → **Deploy from GitHub repo**.
-3. Select the `mt-gede` repository.
+3. Select the `summitsync` repository.
 
 ### Step 2: Configure Build & Docker Settings
 1. Click on your newly deployed service in Railway.
@@ -64,7 +64,7 @@ This guide details how to deploy SummitSync to production using **Vercel** for t
 ### Step 1: Import Project into Vercel
 1. Go to [Vercel.com](https://vercel.com/) and log in with GitHub.
 2. Click **Add New** → **Project**.
-3. Select the `mt-gede` repository.
+3. Select the `summitsync` repository.
 
 ### Step 2: Set Environment Variables
 In the project configuration under **Environment Variables**, add:
