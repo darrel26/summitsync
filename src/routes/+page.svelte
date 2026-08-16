@@ -508,7 +508,7 @@
 		box-shadow: var(--shadow-subtle);
 	}
 
-	.pill-sparkle {
+	:global(.pill-sparkle) {
 		color: #d97706;
 	}
 

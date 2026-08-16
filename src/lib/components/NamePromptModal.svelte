@@ -120,7 +120,7 @@
 		align-items: center;
 	}
 
-	.field-icon {
+	:global(.field-icon) {
 		position: absolute;
 		left: 14px;
 		color: var(--text-muted);
