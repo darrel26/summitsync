@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Dialog from '$lib/components/ui/dialog';
-	import Button from '$lib/components/ui/button/Button.svelte';
-	import Input from '$lib/components/ui/input/Input.svelte';
-	import { KeyRound, ArrowRight } from 'lucide-svelte';
+	import * as Dialog from "$lib/components/ui/dialog";
+	import Button from "$lib/components/ui/button/Button.svelte";
+	import { PinInput } from "$lib/components/ui/pin-input";
+	import { KeyRound, ArrowRight } from "lucide-svelte";
 
 	interface Props {
 		open?: boolean;
@@ -13,39 +13,53 @@
 	let {
 		open = $bindable(false),
 		submitting = false,
-		onUnlock
+		onUnlock,
 	}: Props = $props();
 
-	let enteredPin = $state('');
+	let enteredPin = $state("");
 
-	function handleSubmit(e: SubmitEvent) {
-		e.preventDefault();
-		if (!enteredPin.trim()) return;
-		onUnlock(enteredPin.trim());
+	function handleSubmit(e?: SubmitEvent) {
+		e?.preventDefault();
+		const clean = enteredPin.replace(/\D/g, "");
+		if (clean.length !== 6) return;
+		onUnlock(clean);
 	}
+
+	function handleComplete(pin: string) {
+		enteredPin = pin;
+		onUnlock(pin);
+	}
+
+	$effect(() => {
+		if (!open) {
+			enteredPin = "";
+		}
+	});
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-[400px]">
-		<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-800 mb-1">
+	<Dialog.Content class="sm:max-w-[420px]">
+		<div
+			class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-800 mb-1 ring-8 ring-slate-50"
+		>
 			<KeyRound class="h-6 w-6 text-slate-700" />
 		</div>
 		<Dialog.Header class="text-center sm:text-center">
-			<Dialog.Title class="text-xl font-bold">Organizer PIN Unlock</Dialog.Title>
+			<Dialog.Title class="text-xl font-bold"
+				>Organizer PIN Unlock</Dialog.Title
+			>
 			<Dialog.Description>
-				Enter the trip organizer PIN to unlock owner permissions.
+				Enter your 6-digit trip organizer PIN to unlock owner permissions.
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<form onsubmit={handleSubmit} class="space-y-4 pt-2">
-			<div>
-				<Input
-					type="password"
+		<form onsubmit={handleSubmit} class="space-y-6 pt-3">
+			<div class="flex flex-col items-center justify-center">
+				<PinInput
 					bind:value={enteredPin}
-					placeholder="Enter PIN"
-					maxlength={10}
-					class="text-center tracking-widest font-mono text-base"
-					required
+					length={6}
+					disabled={submitting}
+					onComplete={handleComplete}
 				/>
 			</div>
 
@@ -58,8 +72,12 @@
 				>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={submitting || !enteredPin.trim()} class="gap-1.5">
-					<span>{submitting ? 'Verifying...' : 'Unlock'}</span>
+				<Button
+					type="submit"
+					disabled={submitting || enteredPin.replace(/\D/g, "").length !== 6}
+					class="gap-1.5"
+				>
+					<span>{submitting ? "Verifying..." : "Unlock"}</span>
 					{#if !submitting}
 						<ArrowRight class="h-4 w-4" />
 					{/if}

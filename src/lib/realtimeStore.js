@@ -44,7 +44,8 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 			// Real-time SSE subscription
 			// PocketBase allows filtering topics or handling actions client-side
 			if (!isSubscribed) {
-				await pb.collection(collectionName).subscribe('*', (e) => {
+				isSubscribed = true;
+				pb.collection(collectionName).subscribe('*', (e) => {
 					// Verify record belongs to this trip if filterField is present
 					const recordTripId = filterField ? e.record[filterField] : null;
 
@@ -68,8 +69,10 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 					});
 				}, {
 					expand: expand || undefined
+				}).catch((err) => {
+					console.error(`Error subscribing to ${collectionName}:`, err);
+					isSubscribed = false;
 				});
-				isSubscribed = true;
 			}
 		} catch (err) {
 			console.error(`Error initializing store for ${collectionName}:`, err);
@@ -80,7 +83,7 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 
 	function unsubscribeStore() {
 		if (isSubscribed) {
-			pb.collection(collectionName).unsubscribe('*').catch(() => {});
+			pb.collection(collectionName).unsubscribe('*').catch(() => { });
 			isSubscribed = false;
 		}
 	}

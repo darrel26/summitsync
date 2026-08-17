@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { showToast } from '$lib/toast.js';
-	import * as Card from '$lib/components/ui/card';
-	import Button from '$lib/components/ui/button/Button.svelte';
-	import Input from '$lib/components/ui/input/Input.svelte';
-	import Badge from '$lib/components/ui/badge/Badge.svelte';
+	import { showToast } from "$lib/toast.js";
+	import * as Card from "$lib/components/ui/card";
+	import Button from "$lib/components/ui/button/Button.svelte";
+	import Input from "$lib/components/ui/input/Input.svelte";
+	import Badge from "$lib/components/ui/badge/Badge.svelte";
 	import {
 		Plus,
 		ChevronUp,
@@ -13,8 +13,8 @@
 		Check,
 		X,
 		CalendarDays,
-		Clock
-	} from 'lucide-svelte';
+		Clock,
+	} from "lucide-svelte";
 
 	interface ItineraryEntry {
 		id: string;
@@ -38,38 +38,42 @@
 		isOwner = false,
 		onAddEntry,
 		onUpdateEntry,
-		onDeleteEntry
+		onDeleteEntry,
 	}: Props = $props();
 
 	let newDay = $state(1);
-	let newTitle = $state('');
-	let newTime = $state('');
-	let newDescription = $state('');
+	let newTitle = $state("");
+	let newTime = $state("");
+	let newDescription = $state("");
 	let adding = $state(false);
 
 	let editingEntryId = $state<string | null>(null);
 	let editDay = $state(1);
-	let editTitle = $state('');
-	let editTime = $state('');
-	let editDescription = $state('');
+	let editTitle = $state("");
+	let editTime = $state("");
+	let editDescription = $state("");
 
-	let selectedDayFilter = $state<string | number>('all');
+	let selectedDayFilter = $state<string | number>("all");
 
-	let sortedEntries = $derived([...itineraryEntries].sort((a, b) => {
-		if ((a.day ?? 0) !== (b.day ?? 0)) {
-			return (a.day ?? 0) - (b.day ?? 0);
-		}
-		return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-	}));
+	let sortedEntries = $derived(
+		[...itineraryEntries].sort((a, b) => {
+			if ((a.day ?? 0) !== (b.day ?? 0)) {
+				return (a.day ?? 0) - (b.day ?? 0);
+			}
+			return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+		}),
+	);
 
 	let availableDays = $derived(
-		Array.from(new Set(sortedEntries.map((e) => e.day || 1))).sort((a, b) => a - b)
+		Array.from(new Set(sortedEntries.map((e) => e.day || 1))).sort(
+			(a, b) => a - b,
+		),
 	);
 
 	let filteredEntries = $derived(
-		selectedDayFilter === 'all'
+		selectedDayFilter === "all"
 			? sortedEntries
-			: sortedEntries.filter((e) => (e.day || 1) === selectedDayFilter)
+			: sortedEntries.filter((e) => (e.day || 1) === selectedDayFilter),
 	);
 
 	async function handleAddEntry(e: SubmitEvent) {
@@ -78,21 +82,24 @@
 
 		adding = true;
 		try {
-			const maxSort = sortedEntries.reduce((max, item) => Math.max(max, item.sort_order ?? 0), -1);
+			const maxSort = sortedEntries.reduce(
+				(max, item) => Math.max(max, item.sort_order ?? 0),
+				-1,
+			);
 			await onAddEntry({
 				day: Number(newDay) || 1,
 				title: newTitle.trim(),
 				time: newTime.trim(),
 				description: newDescription.trim(),
-				sort_order: maxSort + 1
+				sort_order: maxSort + 1,
 			});
-			newTitle = '';
-			newTime = '';
-			newDescription = '';
-			showToast('Itinerary event added', 'success');
+			newTitle = "";
+			newTime = "";
+			newDescription = "";
+			showToast("Itinerary event added", "success");
 		} catch (err) {
-			console.error('Error adding itinerary entry:', err);
-			showToast('Failed to add entry', 'error');
+			console.error("Error adding itinerary entry:", err);
+			showToast("Failed to add entry", "error");
 		} finally {
 			adding = false;
 		}
@@ -102,8 +109,8 @@
 		editingEntryId = entry.id;
 		editDay = entry.day ?? 1;
 		editTitle = entry.title;
-		editTime = entry.time || '';
-		editDescription = entry.description || '';
+		editTime = entry.time || "";
+		editDescription = entry.description || "";
 	}
 
 	async function saveEdit(id: string) {
@@ -113,13 +120,13 @@
 				day: Number(editDay) || 1,
 				title: editTitle.trim(),
 				time: editTime.trim(),
-				description: editDescription.trim()
+				description: editDescription.trim(),
 			});
 			editingEntryId = null;
-			showToast('Entry updated', 'success');
+			showToast("Entry updated", "success");
 		} catch (err) {
-			console.error('Error updating entry:', err);
-			showToast('Failed to update entry', 'error');
+			console.error("Error updating entry:", err);
+			showToast("Failed to update entry", "error");
 		}
 	}
 
@@ -127,10 +134,10 @@
 		if (confirm(`Delete "${entry.title}"?`)) {
 			try {
 				await onDeleteEntry(entry.id);
-				showToast('Entry removed', 'info');
+				showToast("Entry removed", "info");
 			} catch (err) {
-				console.error('Error deleting entry:', err);
-				showToast('Failed to delete entry', 'error');
+				console.error("Error deleting entry:", err);
+				showToast("Failed to delete entry", "error");
 			}
 		}
 	}
@@ -146,16 +153,18 @@
 			const currentOrder = currentItem.sort_order ?? index;
 			const targetOrder = targetItem.sort_order ?? targetIndex;
 
-			const newCurrentOrder = currentOrder === targetOrder ? targetIndex : targetOrder;
-			const newTargetOrder = currentOrder === targetOrder ? index : currentOrder;
+			const newCurrentOrder =
+				currentOrder === targetOrder ? targetIndex : targetOrder;
+			const newTargetOrder =
+				currentOrder === targetOrder ? index : currentOrder;
 
 			await Promise.all([
 				onUpdateEntry(currentItem.id, { sort_order: newCurrentOrder }),
-				onUpdateEntry(targetItem.id, { sort_order: newTargetOrder })
+				onUpdateEntry(targetItem.id, { sort_order: newTargetOrder }),
 			]);
 		} catch (err) {
-			console.error('Error reordering itinerary:', err);
-			showToast('Failed to reorder itinerary', 'error');
+			console.error("Error reordering itinerary:", err);
+			showToast("Failed to reorder itinerary", "error");
 		}
 	}
 </script>
@@ -165,21 +174,41 @@
 	{#if isOwner}
 		<Card.Card>
 			<Card.CardHeader class="pb-3">
-				<Card.CardTitle class="text-base font-bold">Schedule Activity / Event</Card.CardTitle>
-				<Card.CardDescription>Add timeline events, summit pushes, meal times, and rest stops.</Card.CardDescription>
+				<Card.CardTitle class="text-base font-bold"
+					>Schedule Activity / Event</Card.CardTitle
+				>
+				<Card.CardDescription
+					>Add timeline events, summit pushes, meal times, and rest
+					stops.</Card.CardDescription
+				>
 			</Card.CardHeader>
 
 			<Card.CardContent>
 				<form onsubmit={handleAddEntry} class="space-y-3">
 					<div class="grid grid-cols-1 gap-2 sm:grid-cols-6">
 						<div class="sm:col-span-1">
-							<Input type="number" min="1" max="30" bind:value={newDay} placeholder="Day" />
+							<Input
+								type="number"
+								min="1"
+								max="30"
+								bind:value={newDay}
+								placeholder="Day"
+							/>
 						</div>
 						<div class="sm:col-span-2">
-							<Input type="text" placeholder="e.g. 05:00 AM" bind:value={newTime} />
+							<Input
+								type="text"
+								placeholder="e.g. 05:00 AM"
+								bind:value={newTime}
+							/>
 						</div>
 						<div class="sm:col-span-3">
-							<Input type="text" placeholder="Activity Title (e.g. Summit Attack)" bind:value={newTitle} required />
+							<Input
+								type="text"
+								placeholder="Activity Title (e.g. Summit Attack)"
+								bind:value={newTitle}
+								required
+							/>
 						</div>
 					</div>
 
@@ -190,26 +219,39 @@
 							bind:value={newDescription}
 							class="flex-1"
 						/>
-						<Button type="submit" disabled={adding || !newTitle.trim()} class="gap-1.5 shrink-0">
+						<Button
+							type="submit"
+							disabled={adding || !newTitle.trim()}
+							class="gap-1.5 shrink-0"
+						>
 							<Plus class="h-4 w-4" />
-							<span>{adding ? 'Adding...' : 'Add Event'}</span>
+							<span>{adding ? "Adding..." : "Add Event"}</span>
 						</Button>
 					</div>
 				</form>
 			</Card.CardContent>
 		</Card.Card>
 	{:else}
-		<div class="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600 shadow-sm">
-			🔒 View-Only Mode — Itinerary activities and schedules are maintained by the trip organizer.
+		<div
+			class="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600 shadow-sm"
+		>
+			🔒 View-Only Mode — Itinerary activities and schedules are
+			maintained by the trip organizer.
 		</div>
 	{/if}
 
 	<!-- Itinerary Timeline Card -->
 	<Card.Card>
-		<Card.CardHeader class="flex flex-row items-center justify-between space-y-0 pb-4">
+		<Card.CardHeader
+			class="flex flex-row items-center justify-between space-y-0 pb-4"
+		>
 			<div>
-				<Card.CardTitle class="text-base font-bold">Chronological Itinerary</Card.CardTitle>
-				<Card.CardDescription>Day-by-day plan of events</Card.CardDescription>
+				<Card.CardTitle class="text-base font-bold"
+					>Chronological Itinerary</Card.CardTitle
+				>
+				<Card.CardDescription
+					>Day-by-day plan of events</Card.CardDescription
+				>
 			</div>
 			<Badge variant="secondary" class="gap-1">
 				<CalendarDays class="h-3 w-3" />
@@ -221,16 +263,20 @@
 			{#if availableDays.length > 1}
 				<div class="flex flex-wrap gap-1.5">
 					<Button
-						variant={selectedDayFilter === 'all' ? 'default' : 'outline'}
+						variant={selectedDayFilter === "all"
+							? "default"
+							: "outline"}
 						size="sm"
 						class="h-7 text-xs rounded-full"
-						onclick={() => (selectedDayFilter = 'all')}
+						onclick={() => (selectedDayFilter = "all")}
 					>
 						All Days
 					</Button>
 					{#each availableDays as dayNum}
 						<Button
-							variant={selectedDayFilter === dayNum ? 'default' : 'outline'}
+							variant={selectedDayFilter === dayNum
+								? "default"
+								: "outline"}
 							size="sm"
 							class="h-7 text-xs rounded-full"
 							onclick={() => (selectedDayFilter = dayNum)}
@@ -243,26 +289,61 @@
 
 			{#if sortedEntries.length === 0}
 				<div class="py-8 text-center text-xs text-slate-500">
-					No itinerary activities planned yet. Add schedule events above.
+					No itinerary activities planned yet. Add schedule events
+					above.
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each filteredEntries as entry, index (entry.id)}
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-xs">
+						<div
+							class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-xs"
+						>
 							{#if editingEntryId === entry.id}
 								<div class="flex-1 space-y-2">
-									<div class="grid grid-cols-1 gap-2 sm:grid-cols-6">
-										<Input type="number" min="1" bind:value={editDay} class="h-8 text-xs sm:col-span-1" />
-										<Input type="text" bind:value={editTime} class="h-8 text-xs sm:col-span-2" placeholder="Time" />
-										<Input type="text" bind:value={editTitle} class="h-8 text-xs sm:col-span-3" placeholder="Title" />
+									<div
+										class="grid grid-cols-1 gap-2 sm:grid-cols-6"
+									>
+										<Input
+											type="number"
+											min="1"
+											bind:value={editDay}
+											class="h-8 text-xs sm:col-span-1"
+										/>
+										<Input
+											type="text"
+											bind:value={editTime}
+											class="h-8 text-xs sm:col-span-2"
+											placeholder="Time"
+										/>
+										<Input
+											type="text"
+											bind:value={editTitle}
+											class="h-8 text-xs sm:col-span-3"
+											placeholder="Title"
+										/>
 									</div>
-									<Input type="text" bind:value={editDescription} class="h-8 text-xs" placeholder="Details" />
+									<Input
+										type="text"
+										bind:value={editDescription}
+										class="h-8 text-xs"
+										placeholder="Details"
+									/>
 									<div class="flex gap-2">
-										<Button size="sm" class="h-7 gap-1 text-xs" onclick={() => saveEdit(entry.id)}>
+										<Button
+											size="sm"
+											class="h-7 gap-1 text-xs"
+											onclick={() => saveEdit(entry.id)}
+										>
 											<Check class="h-3 w-3" />
 											<span>Save</span>
 										</Button>
-										<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={() => (editingEntryId = null)}>
+										<Button
+											variant="outline"
+											size="sm"
+											class="h-7 gap-1 text-xs"
+											onclick={() =>
+												(editingEntryId = null)}
+										>
 											<X class="h-3 w-3" />
 											<span>Cancel</span>
 										</Button>
@@ -270,10 +351,18 @@
 								</div>
 							{:else}
 								<div class="flex items-center gap-3">
-									<div class="flex flex-col gap-1 min-w-[75px]">
-										<Badge variant="secondary" class="w-fit text-[10px] px-1.5 py-0">Day {entry.day || 1}</Badge>
+									<div
+										class="flex flex-col gap-1 min-w-[75px]"
+									>
+										<Badge
+											variant="secondary"
+											class="w-fit text-[10px] px-1.5 py-0"
+											>Day {entry.day || 1}</Badge
+										>
 										{#if entry.time}
-											<div class="flex items-center gap-1 font-mono text-[11px] font-semibold text-emerald-700">
+											<div
+												class="flex items-center gap-1 font-mono text-[11px] font-semibold text-emerald-700"
+											>
 												<Clock class="h-3 w-3" />
 												<span>{entry.time}</span>
 											</div>
@@ -281,15 +370,23 @@
 									</div>
 
 									<div>
-										<h3 class="text-sm font-bold text-slate-900">{entry.title}</h3>
+										<h3
+											class="text-sm font-bold text-slate-900"
+										>
+											{entry.title}
+										</h3>
 										{#if entry.description}
-											<p class="text-xs text-slate-500">{entry.description}</p>
+											<p class="text-xs text-slate-500">
+												{entry.description}
+											</p>
 										{/if}
 									</div>
 								</div>
 
 								{#if isOwner}
-									<div class="flex items-center gap-0.5 self-end sm:self-center shrink-0">
+									<div
+										class="flex items-center gap-0.5 self-end sm:self-center shrink-0"
+									>
 										<Button
 											variant="ghost"
 											size="sm"
@@ -303,7 +400,8 @@
 											variant="ghost"
 											size="sm"
 											class="h-7 w-7 p-0 text-slate-500"
-											disabled={index === sortedEntries.length - 1}
+											disabled={index ===
+												sortedEntries.length - 1}
 											onclick={() => moveEntry(index, 1)}
 										>
 											<ChevronDown class="h-3.5 w-3.5" />

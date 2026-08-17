@@ -1,39 +1,39 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
-	import { pb } from '$lib/pb.js';
-	import { createTripCollectionStore } from '$lib/realtimeStore.js';
-	import { showToast } from '$lib/toast.js';
-	import { AppHeader } from '$lib/components/ui/app-header';
-	import { PageContainer } from '$lib/components/ui/page-container';
-	import Button from '$lib/components/ui/button/Button.svelte';
-	import Badge from '$lib/components/ui/badge/Badge.svelte';
-	import * as Card from '$lib/components/ui/card';
+	import { onMount, onDestroy } from "svelte";
+	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
+	import { pb } from "$lib/pb.js";
+	import { createTripCollectionStore } from "$lib/realtimeStore.js";
+	import { showToast } from "$lib/toast.js";
+	import { AppHeader } from "$lib/components/ui/app-header";
+	import { PageContainer } from "$lib/components/ui/page-container";
+	import Button from "$lib/components/ui/button/Button.svelte";
+	import Badge from "$lib/components/ui/badge/Badge.svelte";
+	import * as Card from "$lib/components/ui/card";
 	import {
 		ChevronLeft,
 		Share2,
 		Trash2,
 		Calendar,
 		KeyRound,
-		Crown
-	} from 'lucide-svelte';
+		Crown,
+	} from "lucide-svelte";
 
-	import TabNav from '$lib/components/TabNav.svelte';
-	import NamePromptModal from '$lib/components/NamePromptModal.svelte';
-	import OrganizerUnlockModal from '$lib/components/OrganizerUnlockModal.svelte';
-	import MembersTab from '$lib/components/MembersTab.svelte';
-	import ChecklistTab from '$lib/components/ChecklistTab.svelte';
-	import RouteTab from '$lib/components/RouteTab.svelte';
-	import ItineraryTab from '$lib/components/ItineraryTab.svelte';
+	import TabNav from "$lib/components/TabNav.svelte";
+	import NamePromptModal from "$lib/components/NamePromptModal.svelte";
+	import OrganizerUnlockModal from "$lib/components/OrganizerUnlockModal.svelte";
+	import MembersTab from "$lib/components/MembersTab.svelte";
+	import ChecklistTab from "$lib/components/ChecklistTab.svelte";
+	import RouteTab from "$lib/components/RouteTab.svelte";
+	import ItineraryTab from "$lib/components/ItineraryTab.svelte";
 
 	let tripId = $derived($page.params.id);
 
 	let trip = $state<any>(null);
 	let loadingTrip = $state(true);
-	let activeTab = $state('checklist');
+	let activeTab = $state("checklist");
 
-	let currentMemberId = $state('');
+	let currentMemberId = $state("");
 	let isOwner = $state(false);
 	let isNamePromptOpen = $state(false);
 	let isUnlockModalOpen = $state(false);
@@ -53,16 +53,20 @@
 	let routeStops = $state<any[]>([]);
 	let itineraryEntries = $state<any[]>([]);
 
-	let unsubMembers: any, unsubGroup: any, unsubPersonal: any, unsubRoute: any, unsubItinerary: any;
+	let unsubMembers: any,
+		unsubGroup: any,
+		unsubPersonal: any,
+		unsubRoute: any,
+		unsubItinerary: any;
 
 	async function fetchTrip() {
 		loadingTrip = true;
 		try {
-			trip = await pb.collection('trips').getOne(tripId);
+			trip = await pb.collection("trips").getOne(tripId);
 			checkPermissions();
 		} catch (err) {
-			console.error('Error fetching trip:', err);
-			showToast('Trip not found or network error', 'error');
+			console.error("Error fetching trip:", err);
+			showToast("Trip not found or network error", "error");
 		} finally {
 			loadingTrip = false;
 		}
@@ -80,7 +84,7 @@
 			}, 50);
 		}
 
-		if (storedOwner === 'true') {
+		if (storedOwner === "true") {
 			isOwner = true;
 		} else {
 			isOwner = false;
@@ -92,24 +96,27 @@
 		try {
 			const trimmedName = name.trim();
 			const existing = members.find(
-				(m) => m.name.toLowerCase() === trimmedName.toLowerCase()
+				(m) => m.name.toLowerCase() === trimmedName.toLowerCase(),
 			);
 
 			if (existing) {
 				currentMemberId = existing.id;
 				localStorage.setItem(`trip_member_${tripId}`, existing.id);
 				isNamePromptOpen = false;
-				showToast(`Welcome back, ${existing.name}!`, 'success');
+				showToast(`Welcome back, ${existing.name}!`, "success");
 			} else {
-				const member = await membersStore.create({ name: trimmedName, role: 'member' });
+				const member = await membersStore.create({
+					name: trimmedName,
+					role: "member",
+				});
 				currentMemberId = member.id;
 				localStorage.setItem(`trip_member_${tripId}`, member.id);
 				isNamePromptOpen = false;
-				showToast(`Welcome, ${trimmedName}!`, 'success');
+				showToast(`Welcome, ${trimmedName}!`, "success");
 			}
 		} catch (err) {
-			console.error('Error handling member identity:', err);
-			showToast('Failed to save your name', 'error');
+			console.error("Error handling member identity:", err);
+			showToast("Failed to save your name", "error");
 		} finally {
 			submittingName = false;
 		}
@@ -119,7 +126,7 @@
 		currentMemberId = member.id;
 		localStorage.setItem(`trip_member_${tripId}`, member.id);
 		isNamePromptOpen = false;
-		showToast(`Connected as ${member.name}`, 'success');
+		showToast(`Connected as ${member.name}`, "success");
 	}
 
 	function handleSwitchIdentity() {
@@ -131,15 +138,15 @@
 		try {
 			if (trip && trip.pin && trip.pin === enteredPin) {
 				isOwner = true;
-				localStorage.setItem(`trip_is_owner_${tripId}`, 'true');
+				localStorage.setItem(`trip_is_owner_${tripId}`, "true");
 				isUnlockModalOpen = false;
-				showToast('Organizer permissions unlocked!', 'success');
+				showToast("Organizer permissions unlocked!", "success");
 			} else {
-				showToast('Incorrect Organizer PIN', 'error');
+				showToast("Incorrect Organizer PIN", "error");
 			}
 		} catch (err) {
-			console.error('Error unlocking permissions:', err);
-			showToast('Failed to verify PIN', 'error');
+			console.error("Error unlocking permissions:", err);
+			showToast("Failed to verify PIN", "error");
 		} finally {
 			verifyingPin = false;
 		}
@@ -148,21 +155,21 @@
 	async function copyTripLink() {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
-			showToast('Trip link copied to clipboard', 'success');
+			showToast("Trip link copied to clipboard", "success");
 		} catch (err) {
-			showToast('Failed to copy link', 'error');
+			showToast("Failed to copy link", "error");
 		}
 	}
 
 	async function handleDeleteTrip() {
 		if (!isOwner) {
-			showToast('Only the trip organizer can delete this trip', 'error');
+			showToast("Only the trip organizer can delete this trip", "error");
 			return;
 		}
 
 		if (
 			!confirm(
-				'Are you sure you want to delete this trip and all its gear items, route stops, and schedule?'
+				"Are you sure you want to delete this trip and all its gear items, route stops, and schedule?",
 			)
 		) {
 			return;
@@ -170,53 +177,103 @@
 
 		deletingTrip = true;
 		try {
-			const [membersList, groupList, personalList, routeList, itinList] = await Promise.all([
-				pb.collection('members').getFullList({ filter: `trip = "${tripId}"` }).catch(() => []),
-				pb.collection('group_items').getFullList({ filter: `trip = "${tripId}"` }).catch(() => []),
-				pb.collection('personal_items').getFullList({
-					filter: members.map((m) => `member = "${m.id}"`).join(' || ') || 'id = ""'
-				}).catch(() => []),
-				pb.collection('route').getFullList({ filter: `trip = "${tripId}"` }).catch(() => []),
-				pb.collection('itinerary').getFullList({ filter: `trip = "${tripId}"` }).catch(() => [])
-			]);
+			const [membersList, groupList, personalList, routeList, itinList] =
+				await Promise.all([
+					pb
+						.collection("members")
+						.getFullList({ filter: `trip = "${tripId}"` })
+						.catch(() => []),
+					pb
+						.collection("group_items")
+						.getFullList({ filter: `trip = "${tripId}"` })
+						.catch(() => []),
+					pb
+						.collection("personal_items")
+						.getFullList({
+							filter:
+								members
+									.map((m) => `member = "${m.id}"`)
+									.join(" || ") || 'id = ""',
+						})
+						.catch(() => []),
+					pb
+						.collection("route")
+						.getFullList({ filter: `trip = "${tripId}"` })
+						.catch(() => []),
+					pb
+						.collection("itinerary")
+						.getFullList({ filter: `trip = "${tripId}"` })
+						.catch(() => []),
+				]);
 
 			await Promise.all([
-				...groupList.map((i: any) => pb.collection('group_items').delete(i.id).catch(() => {})),
-				...personalList.map((i: any) => pb.collection('personal_items').delete(i.id).catch(() => {})),
-				...routeList.map((i: any) => pb.collection('route').delete(i.id).catch(() => {})),
-				...itinList.map((i: any) => pb.collection('itinerary').delete(i.id).catch(() => {})),
-				...membersList.map((i: any) => pb.collection('members').delete(i.id).catch(() => {}))
+				...groupList.map((i: any) =>
+					pb
+						.collection("group_items")
+						.delete(i.id)
+						.catch(() => {}),
+				),
+				...personalList.map((i: any) =>
+					pb
+						.collection("personal_items")
+						.delete(i.id)
+						.catch(() => {}),
+				),
+				...routeList.map((i: any) =>
+					pb
+						.collection("route")
+						.delete(i.id)
+						.catch(() => {}),
+				),
+				...itinList.map((i: any) =>
+					pb
+						.collection("itinerary")
+						.delete(i.id)
+						.catch(() => {}),
+				),
+				...membersList.map((i: any) =>
+					pb
+						.collection("members")
+						.delete(i.id)
+						.catch(() => {}),
+				),
 			]);
 
-			await pb.collection('trips').delete(tripId);
+			await pb.collection("trips").delete(tripId);
 			localStorage.removeItem(`trip_member_${tripId}`);
 			localStorage.removeItem(`trip_is_owner_${tripId}`);
-			showToast('Trip deleted successfully', 'info');
-			goto('/');
+			showToast("Trip deleted successfully", "info");
+			goto("/");
 		} catch (err) {
-			console.error('Error deleting trip:', err);
-			showToast('Failed to delete trip', 'error');
+			console.error("Error deleting trip:", err);
+			showToast("Failed to delete trip", "error");
 		} finally {
 			deletingTrip = false;
 		}
 	}
 
 	async function handleAddMember(name: string) {
-		return await membersStore.create({ name, role: 'member' });
+		return await membersStore.create({ name, role: "member" });
 	}
 
 	async function handleRemoveMember(memberId: string) {
 		if (!isOwner) {
-			showToast('Only the organizer can remove members', 'error');
+			showToast("Only the organizer can remove members", "error");
 			return;
 		}
 
-		const memberPersonal = personalItems.filter((i) => i.member === memberId);
-		await Promise.all(memberPersonal.map((i) => personalItemsStore.deleteRecord(i.id).catch(() => {})));
+		const memberPersonal = personalItems.filter(
+			(i) => i.member === memberId,
+		);
+		await Promise.all(
+			memberPersonal.map((i) =>
+				personalItemsStore.deleteRecord(i.id).catch(() => {}),
+			),
+		);
 		await membersStore.deleteRecord(memberId);
 
 		if (currentMemberId === memberId) {
-			currentMemberId = '';
+			currentMemberId = "";
 			localStorage.removeItem(`trip_member_${tripId}`);
 			isNamePromptOpen = true;
 		}
@@ -225,19 +282,33 @@
 	onMount(() => {
 		fetchTrip();
 
-		membersStore = createTripCollectionStore('members', tripId);
-		groupItemsStore = createTripCollectionStore('group_items', tripId);
-		personalItemsStore = createTripCollectionStore('personal_items', tripId, {
-			filterField: ''
+		membersStore = createTripCollectionStore("members", tripId);
+		groupItemsStore = createTripCollectionStore("group_items", tripId);
+		personalItemsStore = createTripCollectionStore(
+			"personal_items",
+			tripId,
+			{
+				filterField: "",
+			},
+		);
+		routeStore = createTripCollectionStore("route", tripId, {
+			sort: "sort_order",
 		});
-		routeStore = createTripCollectionStore('route', tripId, { sort: 'sort_order' });
-		itineraryStore = createTripCollectionStore('itinerary', tripId, { sort: 'sort_order' });
+		itineraryStore = createTripCollectionStore("itinerary", tripId, {
+			sort: "sort_order",
+		});
 
 		unsubMembers = membersStore.subscribe((val: any[]) => (members = val));
-		unsubGroup = groupItemsStore.subscribe((val: any[]) => (groupItems = val));
-		unsubPersonal = personalItemsStore.subscribe((val: any[]) => (personalItems = val));
+		unsubGroup = groupItemsStore.subscribe(
+			(val: any[]) => (groupItems = val),
+		);
+		unsubPersonal = personalItemsStore.subscribe(
+			(val: any[]) => (personalItems = val),
+		);
 		unsubRoute = routeStore.subscribe((val: any[]) => (routeStops = val));
-		unsubItinerary = itineraryStore.subscribe((val: any[]) => (itineraryEntries = val));
+		unsubItinerary = itineraryStore.subscribe(
+			(val: any[]) => (itineraryEntries = val),
+		);
 
 		membersStore.init();
 		groupItemsStore.init();
@@ -262,21 +333,33 @@
 </script>
 
 <svelte:head>
-	<title>{trip ? `${trip.name} · SummitSync` : 'Trip View'}</title>
+	<title>{trip ? `${trip.name} · SummitSync` : "Trip View"}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-slate-50/50 pb-20 sm:pb-12">
 	<AppHeader>
 		{#snippet children()}
-			<span class="truncate max-w-[200px] font-medium text-slate-700">{trip?.name || 'Trip'}</span>
+			<span class="truncate max-w-[200px] font-medium text-slate-700"
+				>{trip?.name || "Trip"}</span
+			>
 		{/snippet}
 		{#snippet actions()}
-			<Button variant="outline" size="sm" onclick={copyTripLink} class="gap-1.5">
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={copyTripLink}
+				class="gap-1.5"
+			>
 				<Share2 class="h-3.5 w-3.5" />
 				<span class="hidden sm:inline">Share Link</span>
 			</Button>
 			{#if !isOwner}
-				<Button variant="secondary" size="sm" onclick={() => (isUnlockModalOpen = true)} class="gap-1.5">
+				<Button
+					variant="secondary"
+					size="sm"
+					onclick={() => (isUnlockModalOpen = true)}
+					class="gap-1.5"
+				>
 					<KeyRound class="h-3.5 w-3.5" />
 					<span class="hidden sm:inline">Unlock PIN</span>
 				</Button>
@@ -286,15 +369,23 @@
 
 	<PageContainer>
 		{#if loadingTrip}
-			<div class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-				<div class="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900"></div>
+			<div
+				class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3"
+			>
+				<div
+					class="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900"
+				></div>
 				<p class="text-sm">Loading trip workspace...</p>
 			</div>
 		{:else if !trip}
 			<Card.Card class="text-center p-8">
 				<Card.CardHeader>
-					<Card.CardTitle class="text-xl">Trip Not Found</Card.CardTitle>
-					<Card.CardDescription>This trip link may be invalid or the trip was deleted.</Card.CardDescription>
+					<Card.CardTitle class="text-xl"
+						>Trip Not Found</Card.CardTitle
+					>
+					<Card.CardDescription
+						>This trip link may be invalid or the trip was deleted.</Card.CardDescription
+					>
 				</Card.CardHeader>
 				<Card.CardContent>
 					<Button href="/" variant="default">Back to Trips</Button>
@@ -302,17 +393,24 @@
 			</Card.Card>
 		{:else}
 			<!-- Workspace Header -->
-			<div class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start">
+			<div
+				class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start"
+			>
 				<div class="space-y-2">
 					<div class="flex items-center gap-2">
-						<a href="/" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900">
+						<a
+							href="/"
+							class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900"
+						>
 							<ChevronLeft class="h-3.5 w-3.5" />
 							<span>All Trips</span>
 						</a>
 					</div>
 
 					<div class="flex flex-wrap items-center gap-2.5">
-						<h1 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+						<h1
+							class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl"
+						>
 							{trip.name}
 						</h1>
 						{#if trip.date}
@@ -330,7 +428,9 @@
 					</div>
 
 					{#if trip.description}
-						<p class="max-w-2xl text-sm text-slate-600 leading-relaxed">
+						<p
+							class="max-w-2xl text-sm text-slate-600 leading-relaxed"
+						>
 							{trip.description}
 						</p>
 					{/if}
@@ -346,7 +446,11 @@
 							class="gap-1.5"
 						>
 							<Trash2 class="h-3.5 w-3.5" />
-							<span>{deletingTrip ? 'Deleting...' : 'Delete Trip'}</span>
+							<span
+								>{deletingTrip
+									? "Deleting..."
+									: "Delete Trip"}</span
+							>
 						</Button>
 					{/if}
 				</div>
@@ -365,21 +469,27 @@
 
 			<!-- Active Tab View -->
 			<div role="tabpanel" aria-labelledby="tab-{activeTab}">
-				{#if activeTab === 'checklist'}
+				{#if activeTab === "checklist"}
 					<ChecklistTab
 						{groupItems}
 						{personalItems}
 						{members}
 						{currentMemberId}
 						{isOwner}
-						onAddGroupItem={(data: any) => groupItemsStore.create(data)}
-						onUpdateGroupItem={(id: string, data: any) => groupItemsStore.updateRecord(id, data)}
-						onDeleteGroupItem={(id: string) => groupItemsStore.deleteRecord(id)}
-						onAddPersonalItem={(data: any) => personalItemsStore.create(data)}
-						onUpdatePersonalItem={(id: string, data: any) => personalItemsStore.updateRecord(id, data)}
-						onDeletePersonalItem={(id: string) => personalItemsStore.deleteRecord(id)}
+						onAddGroupItem={(data: any) =>
+							groupItemsStore.create(data)}
+						onUpdateGroupItem={(id: string, data: any) =>
+							groupItemsStore.updateRecord(id, data)}
+						onDeleteGroupItem={(id: string) =>
+							groupItemsStore.deleteRecord(id)}
+						onAddPersonalItem={(data: any) =>
+							personalItemsStore.create(data)}
+						onUpdatePersonalItem={(id: string, data: any) =>
+							personalItemsStore.updateRecord(id, data)}
+						onDeletePersonalItem={(id: string) =>
+							personalItemsStore.deleteRecord(id)}
 					/>
-				{:else if activeTab === 'members'}
+				{:else if activeTab === "members"}
 					<MembersTab
 						{members}
 						{currentMemberId}
@@ -388,21 +498,25 @@
 						onRemoveMember={handleRemoveMember}
 						onSwitchIdentity={handleSwitchIdentity}
 					/>
-				{:else if activeTab === 'route'}
+				{:else if activeTab === "route"}
 					<RouteTab
 						{routeStops}
 						{isOwner}
 						onAddStop={(data: any) => routeStore.create(data)}
-						onUpdateStop={(id: string, data: any) => routeStore.updateRecord(id, data)}
-						onDeleteStop={(id: string) => routeStore.deleteRecord(id)}
+						onUpdateStop={(id: string, data: any) =>
+							routeStore.updateRecord(id, data)}
+						onDeleteStop={(id: string) =>
+							routeStore.deleteRecord(id)}
 					/>
-				{:else if activeTab === 'itinerary'}
+				{:else if activeTab === "itinerary"}
 					<ItineraryTab
 						{itineraryEntries}
 						{isOwner}
 						onAddEntry={(data: any) => itineraryStore.create(data)}
-						onUpdateEntry={(id: string, data: any) => itineraryStore.updateRecord(id, data)}
-						onDeleteEntry={(id: string) => itineraryStore.deleteRecord(id)}
+						onUpdateEntry={(id: string, data: any) =>
+							itineraryStore.updateRecord(id, data)}
+						onDeleteEntry={(id: string) =>
+							itineraryStore.deleteRecord(id)}
 					/>
 				{/if}
 			</div>

@@ -1,7 +1,7 @@
 <script>
-	import { toast } from '$lib/toast.js';
-	import { CheckCircle2, AlertCircle, Info } from 'lucide-svelte';
-	import '../app.css';
+	import { toast } from "$lib/toast.js";
+	import { CheckCircle2, AlertCircle, Info } from "lucide-svelte";
+	import "../app.css";
 
 	let { children } = $props();
 </script>
@@ -13,9 +13,9 @@
 	{#if $toast}
 		<div class="toast-wrapper" aria-live="polite" role="status">
 			<div class="toast toast-{$toast.type}">
-				{#if $toast.type === 'success'}
+				{#if $toast.type === "success"}
 					<CheckCircle2 size={16} class="toast-icon" />
-				{:else if $toast.type === 'error'}
+				{:else if $toast.type === "error"}
 					<AlertCircle size={16} class="toast-icon" />
 				{:else}
 					<Info size={16} class="toast-icon" />
