@@ -1,5 +1,9 @@
-<script>
+<script lang="ts">
 	import { showToast } from '$lib/toast.js';
+	import * as Card from '$lib/components/ui/card';
+	import Button from '$lib/components/ui/button/Button.svelte';
+	import Input from '$lib/components/ui/input/Input.svelte';
+	import Badge from '$lib/components/ui/badge/Badge.svelte';
 	import {
 		Plus,
 		ChevronUp,
@@ -11,25 +15,40 @@
 		MapPin
 	} from 'lucide-svelte';
 
+	interface RouteStop {
+		id: string;
+		label: string;
+		description?: string;
+		sort_order?: number;
+	}
+
+	interface Props {
+		routeStops?: RouteStop[];
+		isOwner?: boolean;
+		onAddStop: (data: any) => Promise<any>;
+		onUpdateStop: (id: string, data: any) => Promise<any>;
+		onDeleteStop: (id: string) => Promise<any>;
+	}
+
 	let {
 		routeStops = [],
 		isOwner = false,
 		onAddStop,
 		onUpdateStop,
 		onDeleteStop
-	} = $props();
+	}: Props = $props();
 
 	let newLabel = $state('');
 	let newDescription = $state('');
 	let adding = $state(false);
 
-	let editingStopId = $state(null);
+	let editingStopId = $state<string | null>(null);
 	let editLabel = $state('');
 	let editDescription = $state('');
 
 	let sortedStops = $derived([...routeStops].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
 
-	async function handleAddStop(e) {
+	async function handleAddStop(e: SubmitEvent) {
 		e.preventDefault();
 		if (!newLabel.trim()) return;
 
@@ -52,13 +71,13 @@
 		}
 	}
 
-	function startEdit(stop) {
+	function startEdit(stop: RouteStop) {
 		editingStopId = stop.id;
 		editLabel = stop.label;
 		editDescription = stop.description || '';
 	}
 
-	async function saveEdit(id) {
+	async function saveEdit(id: string) {
 		if (!editLabel.trim()) return;
 		try {
 			await onUpdateStop(id, {
@@ -73,7 +92,7 @@
 		}
 	}
 
-	async function handleDelete(stop) {
+	async function handleDelete(stop: RouteStop) {
 		if (confirm(`Delete stop "${stop.label}"?`)) {
 			try {
 				await onDeleteStop(stop.id);
@@ -85,7 +104,7 @@
 		}
 	}
 
-	async function moveStop(index, direction) {
+	async function moveStop(index: number, direction: number) {
 		const targetIndex = index + direction;
 		if (targetIndex < 0 || targetIndex >= sortedStops.length) return;
 
@@ -110,373 +129,146 @@
 	}
 </script>
 
-<div class="route-layout">
+<div class="space-y-6">
 	<!-- Add Stop Card -->
 	{#if isOwner}
-		<div class="card add-card">
-			<div class="card-header">
-				<h2 class="card-title">Add Waypoint / Checkpoint</h2>
-				<p class="card-sub">Meeting points, trailheads, shelters, water sources and campsites.</p>
-			</div>
+		<Card.Card>
+			<Card.CardHeader class="pb-3">
+				<Card.CardTitle class="text-base font-bold">Add Waypoint / Checkpoint</Card.CardTitle>
+				<Card.CardDescription>Meeting points, trailheads, shelters, and campsites.</Card.CardDescription>
+			</Card.CardHeader>
 
-			<form onsubmit={handleAddStop} class="add-stop-form">
-				<div class="input-grid">
-					<input
-						type="text"
-						placeholder="Location or checkpoint (e.g. Cibodas Basecamp)..."
-						bind:value={newLabel}
-						required
-						class="input-location"
-					/>
-					<input
-						type="text"
-						placeholder="Notes & instructions (e.g. Meet at 05:00 AM, parking fee 20k)..."
-						bind:value={newDescription}
-						class="input-notes"
-					/>
-				</div>
-				<button type="submit" class="btn btn-primary" disabled={adding || !newLabel.trim()}>
-					<Plus size={16} />
-					<span>{adding ? 'Adding...' : 'Add Waypoint'}</span>
-				</button>
-			</form>
-		</div>
+			<Card.CardContent>
+				<form onsubmit={handleAddStop} class="flex flex-col gap-3">
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+						<Input
+							type="text"
+							placeholder="Location or checkpoint (e.g. Cibodas Basecamp)..."
+							bind:value={newLabel}
+							required
+						/>
+						<Input
+							type="text"
+							placeholder="Notes & instructions (e.g. Meet at 05:00 AM)..."
+							bind:value={newDescription}
+						/>
+					</div>
+					<Button type="submit" disabled={adding || !newLabel.trim()} class="self-start gap-1.5">
+						<Plus class="h-4 w-4" />
+						<span>{adding ? 'Adding...' : 'Add Waypoint'}</span>
+					</Button>
+				</form>
+			</Card.CardContent>
+		</Card.Card>
 	{:else}
-		<div class="view-only-banner">
-			<span>🔒 View-Only Mode — Route waypoints and stops are maintained by the trip organizer.</span>
+		<div class="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600 shadow-sm">
+			🔒 View-Only Mode — Route waypoints and stops are maintained by the trip organizer.
 		</div>
 	{/if}
 
 	<!-- Stops Timeline Card -->
-	<div class="card timeline-card">
-		<div class="card-header flex-between">
+	<Card.Card>
+		<Card.CardHeader class="flex flex-row items-center justify-between space-y-0 pb-4">
 			<div>
-				<h2 class="card-title">Route Trail & Stops</h2>
-				<p class="card-sub">Step-by-step route order</p>
+				<Card.CardTitle class="text-base font-bold">Route Trail & Stops</Card.CardTitle>
+				<Card.CardDescription>Step-by-step route order</Card.CardDescription>
 			</div>
-			<div class="count-pill">
-				<MapPin size={13} />
+			<Badge variant="secondary" class="gap-1">
+				<MapPin class="h-3 w-3" />
 				<span>{sortedStops.length} stops</span>
-			</div>
-		</div>
+			</Badge>
+		</Card.CardHeader>
 
-		{#if sortedStops.length === 0}
-			<div class="empty-state">
-				<p>No route stops added yet. Add your starting point, checkpoints, and destination above.</p>
-			</div>
-		{:else}
-			<div class="trail-timeline">
-				{#each sortedStops as stop, index (stop.id)}
-					<div class="timeline-step">
-						<!-- Marker & Connecting Line -->
-						<div class="step-indicator">
-							<div class="step-num">{index + 1}</div>
-							{#if index < sortedStops.length - 1}
-								<div class="step-line"></div>
-							{/if}
-						</div>
+		<Card.CardContent>
+			{#if sortedStops.length === 0}
+				<div class="py-8 text-center text-xs text-slate-500">
+					No route stops added yet. Add your starting point, checkpoints, and destination above.
+				</div>
+			{:else}
+				<div class="relative space-y-4">
+					{#each sortedStops as stop, index (stop.id)}
+						<div class="flex gap-3">
+							<!-- Step Indicator -->
+							<div class="flex flex-col items-center">
+								<div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white shadow-sm">
+									{index + 1}
+								</div>
+								{#if index < sortedStops.length - 1}
+									<div class="w-0.5 flex-1 bg-slate-200 my-1"></div>
+								{/if}
+							</div>
 
-						<!-- Step Box -->
-						<div class="step-body">
-							{#if editingStopId === stop.id}
-								<div class="edit-stop-block">
-									<input
-										type="text"
-										bind:value={editLabel}
-										class="edit-input-field"
-										placeholder="Stop name"
-									/>
-									<input
-										type="text"
-										bind:value={editDescription}
-										class="edit-input-field"
-										placeholder="Notes or instructions"
-									/>
-									<div class="edit-btn-row">
-										<button type="button" class="btn btn-sm btn-primary" onclick={() => saveEdit(stop.id)}>
-											<Check size={14} />
-											<span>Save</span>
-										</button>
-										<button type="button" class="btn btn-sm btn-secondary" onclick={() => (editingStopId = null)}>
-											<X size={14} />
-											<span>Cancel</span>
-										</button>
+							<!-- Stop Body -->
+							<div class="flex-1 rounded-lg border border-slate-200 bg-white p-3 shadow-xs">
+								{#if editingStopId === stop.id}
+									<div class="space-y-2">
+										<Input bind:value={editLabel} class="h-8 text-xs" placeholder="Stop name" />
+										<Input bind:value={editDescription} class="h-8 text-xs" placeholder="Notes or instructions" />
+										<div class="flex gap-2">
+											<Button size="sm" class="h-7 gap-1 text-xs" onclick={() => saveEdit(stop.id)}>
+												<Check class="h-3 w-3" />
+												<span>Save</span>
+											</Button>
+											<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={() => (editingStopId = null)}>
+												<X class="h-3 w-3" />
+												<span>Cancel</span>
+											</Button>
+										</div>
 									</div>
-								</div>
-							{:else}
-								<div class="stop-info">
-									<h3 class="stop-name">{stop.label}</h3>
-									{#if stop.description}
-										<p class="stop-details">{stop.description}</p>
-									{/if}
-								</div>
+								{:else}
+									<div class="flex items-start justify-between gap-2">
+										<div>
+											<h3 class="text-sm font-bold text-slate-900">{stop.label}</h3>
+											{#if stop.description}
+												<p class="mt-0.5 text-xs text-slate-500">{stop.description}</p>
+											{/if}
+										</div>
 
-								{#if isOwner}
-									<div class="step-actions">
-										<button
-											type="button"
-											class="btn-icon"
-											disabled={index === 0}
-											onclick={() => moveStop(index, -1)}
-											title="Move up"
-											aria-label="Move stop up"
-										>
-											<ChevronUp size={15} />
-										</button>
-										<button
-											type="button"
-											class="btn-icon"
-											disabled={index === sortedStops.length - 1}
-											onclick={() => moveStop(index, 1)}
-											title="Move down"
-											aria-label="Move stop down"
-										>
-											<ChevronDown size={15} />
-										</button>
-										<button
-											type="button"
-											class="btn-icon"
-											onclick={() => startEdit(stop)}
-											title="Edit stop"
-											aria-label="Edit stop"
-										>
-											<Pencil size={14} />
-										</button>
-										<button
-											type="button"
-											class="btn-icon btn-danger-hover"
-											onclick={() => handleDelete(stop)}
-											title="Delete stop"
-											aria-label="Delete stop"
-										>
-											<Trash2 size={14} />
-										</button>
+										{#if isOwner}
+											<div class="flex items-center gap-0.5 shrink-0">
+												<Button
+													variant="ghost"
+													size="sm"
+													class="h-7 w-7 p-0 text-slate-500"
+													disabled={index === 0}
+													onclick={() => moveStop(index, -1)}
+												>
+													<ChevronUp class="h-3.5 w-3.5" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													class="h-7 w-7 p-0 text-slate-500"
+													disabled={index === sortedStops.length - 1}
+													onclick={() => moveStop(index, 1)}
+												>
+													<ChevronDown class="h-3.5 w-3.5" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													class="h-7 w-7 p-0 text-slate-500"
+													onclick={() => startEdit(stop)}
+												>
+													<Pencil class="h-3.5 w-3.5" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													class="h-7 w-7 p-0 text-slate-500 hover:text-red-600"
+													onclick={() => handleDelete(stop)}
+												>
+													<Trash2 class="h-3.5 w-3.5" />
+												</Button>
+											</div>
+										{/if}
 									</div>
 								{/if}
-							{/if}
+							</div>
 						</div>
-					</div>
-				{/each}
-			</div>
-		{/if}
-	</div>
+					{/each}
+				</div>
+			{/if}
+		</Card.CardContent>
+	</Card.Card>
 </div>
-
-<style>
-	.view-only-banner {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 14px 18px;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		box-shadow: var(--shadow-card);
-	}
-
-	.card-header {
-		margin-bottom: 18px;
-	}
-
-	.flex-between {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.card-title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--text-main);
-		letter-spacing: -0.01em;
-	}
-
-	.card-sub {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-top: 2px;
-	}
-
-	.count-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: var(--bg-subtle);
-		padding: 4px 10px;
-		border-radius: var(--radius-full);
-	}
-
-	.add-stop-form {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.input-grid {
-		display: grid;
-		grid-template-columns: 1fr 1.5fr;
-		gap: 10px;
-	}
-
-	@media (max-width: 640px) {
-		.input-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	.input-location,
-	.input-notes {
-		padding: 9px 12px;
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		font-size: 0.9rem;
-		outline: none;
-	}
-
-	.input-location:focus,
-	.input-notes:focus {
-		border-color: var(--border-focus);
-	}
-
-	/* Timeline */
-	.trail-timeline {
-		display: flex;
-		flex-direction: column;
-		margin-top: 8px;
-	}
-
-	.timeline-step {
-		display: flex;
-		gap: 14px;
-		position: relative;
-		padding-bottom: 18px;
-	}
-
-	.timeline-step:last-child {
-		padding-bottom: 0;
-	}
-
-	.step-indicator {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.step-num {
-		width: 28px;
-		height: 28px;
-		border-radius: var(--radius-full);
-		background: var(--color-primary);
-		color: #ffffff;
-		font-size: 0.75rem;
-		font-weight: 700;
-		display: grid;
-		place-content: center;
-		z-index: 2;
-	}
-
-	.step-line {
-		width: 2px;
-		flex: 1;
-		background: var(--border-default);
-		margin-top: 4px;
-		margin-bottom: 4px;
-	}
-
-	.step-body {
-		flex: 1;
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		padding: 12px 16px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 12px;
-		transition: border-color 0.15s ease;
-	}
-
-	.step-body:hover {
-		border-color: var(--border-hover);
-	}
-
-	.stop-info {
-		flex: 1;
-	}
-
-	.stop-name {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	.stop-details {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-top: 2px;
-	}
-
-	.step-actions {
-		display: flex;
-		gap: 2px;
-	}
-
-	.btn-icon:disabled {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-
-	.btn-danger-hover:hover:not(:disabled) {
-		color: var(--color-danger);
-		background: var(--color-danger-light);
-	}
-
-	.edit-stop-block {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		width: 100%;
-	}
-
-	.edit-input-field {
-		width: 100%;
-		padding: 7px 10px;
-		border: 1px solid var(--border-focus);
-		border-radius: var(--radius-sm);
-		font-size: 0.875rem;
-	}
-
-	.edit-btn-row {
-		display: flex;
-		gap: 8px;
-	}
-
-	.empty-state {
-		text-align: center;
-		padding: 36px 16px;
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 640px) {
-		.step-body {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 12px;
-			padding: 14px;
-		}
-
-		.step-actions {
-			align-self: flex-end;
-			gap: 6px;
-		}
-
-		.step-actions .btn-icon {
-			min-width: 40px;
-			min-height: 40px;
-			padding: 10px;
-		}
-	}
-</style>

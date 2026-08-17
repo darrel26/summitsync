@@ -1,10 +1,21 @@
-<script>
+<script lang="ts">
 	import {
 		CheckSquare,
 		Users,
 		MapPin,
 		CalendarDays
 	} from 'lucide-svelte';
+	import { cn } from '$lib/utils';
+
+	interface Props {
+		activeTab?: string;
+		memberCount?: number;
+		groupItemCount?: number;
+		personalItemCount?: number;
+		routeCount?: number;
+		itineraryCount?: number;
+		onSelectTab: (tabId: string) => void;
+	}
 
 	let {
 		activeTab = 'checklist',
@@ -14,7 +25,7 @@
 		routeCount = 0,
 		itineraryCount = 0,
 		onSelectTab
-	} = $props();
+	}: Props = $props();
 
 	const tabs = [
 		{ id: 'checklist', label: 'Checklist', icon: CheckSquare, count: () => groupItemCount + personalItemCount },
@@ -24,162 +35,44 @@
 	];
 </script>
 
-<div class="tabs-nav-wrapper">
-	<div class="tabs-nav" role="tablist" aria-label="Trip workspace views">
+<div class="mb-6 rounded-xl border border-slate-200 bg-white p-1 shadow-sm max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-50 max-sm:mb-0 max-sm:rounded-b-none max-sm:rounded-t-xl max-sm:border-x-0 max-sm:border-b-0 max-sm:p-1.5 max-sm:shadow-lg max-sm:pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
+	<div class="grid grid-cols-4 gap-1" role="tablist" aria-label="Trip workspace views">
 		{#each tabs as tab}
 			{@const Icon = tab.icon}
 			{@const count = tab.count()}
+			{@const isActive = activeTab === tab.id}
 			<button
 				id="tab-{tab.id}"
 				type="button"
 				role="tab"
-				aria-selected={activeTab === tab.id}
+				aria-selected={isActive}
 				aria-controls="main-content"
 				aria-label={count > 0 ? `${tab.label} (${count})` : tab.label}
-				class="tab-item"
-				class:active={activeTab === tab.id}
+				class={cn(
+					'flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-sm font-semibold transition-all max-sm:flex-col max-sm:gap-0.5 max-sm:py-1.5 max-sm:text-[11px]',
+					isActive
+						? 'bg-slate-900 text-white shadow-sm max-sm:bg-slate-100 max-sm:text-slate-900 max-sm:shadow-none'
+						: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+				)}
 				onclick={() => onSelectTab(tab.id)}
 			>
-				<div class="tab-icon-wrap">
-					<Icon size={18} strokeWidth={activeTab === tab.id ? 2.4 : 1.8} />
+				<div class="relative flex items-center justify-center">
+					<Icon class="h-4 w-4 max-sm:h-4 max-sm:w-4" strokeWidth={isActive ? 2.5 : 2} />
 					{#if count > 0}
-						<span class="tab-badge">{count}</span>
+						<span
+							class={cn(
+								'absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold font-mono',
+								isActive
+									? 'bg-white text-slate-900 max-sm:bg-slate-900 max-sm:text-white'
+									: 'bg-slate-900 text-white'
+							)}
+						>
+							{count}
+						</span>
 					{/if}
 				</div>
-				<span class="tab-label">{tab.label}</span>
+				<span class="truncate">{tab.label}</span>
 			</button>
 		{/each}
 	</div>
 </div>
-
-<style>
-	.tabs-nav-wrapper {
-		margin-bottom: 28px;
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 4px;
-		box-shadow: var(--shadow-subtle);
-		position: relative;
-	}
-
-	.tabs-nav {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 4px;
-		width: 100%;
-	}
-
-	.tab-item {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding: 10px 16px;
-		border-radius: var(--radius-md);
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-		font-weight: 600;
-		transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-		position: relative;
-		user-select: none;
-		border: none;
-		background: transparent;
-	}
-
-	.tab-item:hover:not(.active) {
-		color: var(--text-main);
-		background-color: var(--bg-subtle);
-	}
-
-	.tab-item.active {
-		color: var(--text-main);
-		background-color: var(--bg-surface);
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
-	}
-
-	.tab-icon-wrap {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.tab-label {
-		white-space: nowrap;
-	}
-
-	.tab-badge {
-		position: absolute;
-		top: -6px;
-		right: -10px;
-		background-color: var(--color-primary);
-		color: #ffffff;
-		font-size: 0.65rem;
-		font-weight: 700;
-		height: 16px;
-		min-width: 16px;
-		padding: 0 4px;
-		border-radius: var(--radius-full);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
-		font-family: var(--font-mono);
-	}
-
-	/* Fixed Bottom Nav for Mobile */
-	@media (max-width: 640px) {
-		.tabs-nav-wrapper {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			margin-bottom: 0;
-			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-			border-left: none;
-			border-right: none;
-			border-bottom: none;
-			background: var(--bg-surface);
-			z-index: 100;
-			padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-			box-shadow: 0 -4px 16px -2px rgba(0, 0, 0, 0.08);
-		}
-
-		.tabs-nav {
-			display: flex;
-			justify-content: space-around;
-			gap: 2px;
-		}
-
-		.tab-item {
-			flex: 1;
-			flex-direction: column;
-			gap: 3px;
-			padding: 6px 2px;
-			min-height: 52px;
-			border-radius: var(--radius-md);
-		}
-
-		.tab-label {
-			font-size: 0.6875rem;
-			font-weight: 600;
-			letter-spacing: -0.01em;
-		}
-
-		.tab-badge {
-			top: -4px;
-			right: -8px;
-			font-size: 0.6rem;
-			height: 14px;
-			min-width: 14px;
-			padding: 0 3px;
-		}
-
-		.tab-item.active {
-			background-color: var(--bg-subtle);
-			color: var(--color-primary);
-			box-shadow: none;
-		}
-	}
-</style>

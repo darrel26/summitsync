@@ -1,19 +1,22 @@
-<script>
+<script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { pb } from '$lib/pb.js';
 	import { createTripCollectionStore } from '$lib/realtimeStore.js';
 	import { showToast } from '$lib/toast.js';
+	import { AppHeader } from '$lib/components/ui/app-header';
+	import { PageContainer } from '$lib/components/ui/page-container';
+	import Button from '$lib/components/ui/button/Button.svelte';
+	import Badge from '$lib/components/ui/badge/Badge.svelte';
+	import * as Card from '$lib/components/ui/card';
 	import {
 		ChevronLeft,
 		Share2,
 		Trash2,
 		Calendar,
 		KeyRound,
-		Crown,
-		ShieldCheck,
-		UserCheck
+		Crown
 	} from 'lucide-svelte';
 
 	import TabNav from '$lib/components/TabNav.svelte';
@@ -26,32 +29,31 @@
 
 	let tripId = $derived($page.params.id);
 
-	let trip = $state(null);
+	let trip = $state<any>(null);
 	let loadingTrip = $state(true);
 	let activeTab = $state('checklist');
 
 	let currentMemberId = $state('');
 	let isOwner = $state(false);
-	let namePromptModalEl = $state();
-	let unlockModalEl = $state();
+	let isNamePromptOpen = $state(false);
+	let isUnlockModalOpen = $state(false);
 	let submittingName = $state(false);
 	let verifyingPin = $state(false);
 	let deletingTrip = $state(false);
 
-	// Real-time stores
-	let membersStore;
-	let groupItemsStore;
-	let personalItemsStore;
-	let routeStore;
-	let itineraryStore;
+	let membersStore: any;
+	let groupItemsStore: any;
+	let personalItemsStore: any;
+	let routeStore: any;
+	let itineraryStore: any;
 
-	let members = $state([]);
-	let groupItems = $state([]);
-	let personalItems = $state([]);
-	let routeStops = $state([]);
-	let itineraryEntries = $state([]);
+	let members = $state<any[]>([]);
+	let groupItems = $state<any[]>([]);
+	let personalItems = $state<any[]>([]);
+	let routeStops = $state<any[]>([]);
+	let itineraryEntries = $state<any[]>([]);
 
-	let unsubMembers, unsubGroup, unsubPersonal, unsubRoute, unsubItinerary;
+	let unsubMembers: any, unsubGroup: any, unsubPersonal: any, unsubRoute: any, unsubItinerary: any;
 
 	async function fetchTrip() {
 		loadingTrip = true;
@@ -74,7 +76,7 @@
 			currentMemberId = storedId;
 		} else {
 			setTimeout(() => {
-				namePromptModalEl?.showModal();
+				isNamePromptOpen = true;
 			}, 50);
 		}
 
@@ -85,10 +87,9 @@
 		}
 	}
 
-	async function handleJoinName(name) {
+	async function handleJoinName(name: string) {
 		submittingName = true;
 		try {
-			// Check if member already exists on this trip
 			const trimmedName = name.trim();
 			const existing = members.find(
 				(m) => m.name.toLowerCase() === trimmedName.toLowerCase()
@@ -97,13 +98,13 @@
 			if (existing) {
 				currentMemberId = existing.id;
 				localStorage.setItem(`trip_member_${tripId}`, existing.id);
-				namePromptModalEl?.close();
+				isNamePromptOpen = false;
 				showToast(`Welcome back, ${existing.name}!`, 'success');
 			} else {
 				const member = await membersStore.create({ name: trimmedName, role: 'member' });
 				currentMemberId = member.id;
 				localStorage.setItem(`trip_member_${tripId}`, member.id);
-				namePromptModalEl?.close();
+				isNamePromptOpen = false;
 				showToast(`Welcome, ${trimmedName}!`, 'success');
 			}
 		} catch (err) {
@@ -114,24 +115,24 @@
 		}
 	}
 
-	function handleClaimMember(member) {
+	function handleClaimMember(member: any) {
 		currentMemberId = member.id;
 		localStorage.setItem(`trip_member_${tripId}`, member.id);
-		namePromptModalEl?.close();
+		isNamePromptOpen = false;
 		showToast(`Connected as ${member.name}`, 'success');
 	}
 
 	function handleSwitchIdentity() {
-		namePromptModalEl?.showModal();
+		isNamePromptOpen = true;
 	}
 
-	async function handleUnlockOrganizer(enteredPin) {
+	async function handleUnlockOrganizer(enteredPin: string) {
 		verifyingPin = true;
 		try {
 			if (trip && trip.pin && trip.pin === enteredPin) {
 				isOwner = true;
 				localStorage.setItem(`trip_is_owner_${tripId}`, 'true');
-				unlockModalEl?.close();
+				isUnlockModalOpen = false;
 				showToast('Organizer permissions unlocked!', 'success');
 			} else {
 				showToast('Incorrect Organizer PIN', 'error');
@@ -169,7 +170,6 @@
 
 		deletingTrip = true;
 		try {
-			// Cascade deletion
 			const [membersList, groupList, personalList, routeList, itinList] = await Promise.all([
 				pb.collection('members').getFullList({ filter: `trip = "${tripId}"` }).catch(() => []),
 				pb.collection('group_items').getFullList({ filter: `trip = "${tripId}"` }).catch(() => []),
@@ -181,14 +181,13 @@
 			]);
 
 			await Promise.all([
-				...groupList.map((i) => pb.collection('group_items').delete(i.id).catch(() => {})),
-				...personalList.map((i) => pb.collection('personal_items').delete(i.id).catch(() => {})),
-				...routeList.map((i) => pb.collection('route').delete(i.id).catch(() => {})),
-				...itinList.map((i) => pb.collection('itinerary').delete(i.id).catch(() => {})),
-				...membersList.map((i) => pb.collection('members').delete(i.id).catch(() => {}))
+				...groupList.map((i: any) => pb.collection('group_items').delete(i.id).catch(() => {})),
+				...personalList.map((i: any) => pb.collection('personal_items').delete(i.id).catch(() => {})),
+				...routeList.map((i: any) => pb.collection('route').delete(i.id).catch(() => {})),
+				...itinList.map((i: any) => pb.collection('itinerary').delete(i.id).catch(() => {})),
+				...membersList.map((i: any) => pb.collection('members').delete(i.id).catch(() => {}))
 			]);
 
-			// Delete trip itself
 			await pb.collection('trips').delete(tripId);
 			localStorage.removeItem(`trip_member_${tripId}`);
 			localStorage.removeItem(`trip_is_owner_${tripId}`);
@@ -202,11 +201,11 @@
 		}
 	}
 
-	async function handleAddMember(name) {
+	async function handleAddMember(name: string) {
 		return await membersStore.create({ name, role: 'member' });
 	}
 
-	async function handleRemoveMember(memberId) {
+	async function handleRemoveMember(memberId: string) {
 		if (!isOwner) {
 			showToast('Only the organizer can remove members', 'error');
 			return;
@@ -219,14 +218,13 @@
 		if (currentMemberId === memberId) {
 			currentMemberId = '';
 			localStorage.removeItem(`trip_member_${tripId}`);
-			showNamePrompt = true;
+			isNamePromptOpen = true;
 		}
 	}
 
 	onMount(() => {
 		fetchTrip();
 
-		// Initialize real-time stores
 		membersStore = createTripCollectionStore('members', tripId);
 		groupItemsStore = createTripCollectionStore('group_items', tripId);
 		personalItemsStore = createTripCollectionStore('personal_items', tripId, {
@@ -235,11 +233,11 @@
 		routeStore = createTripCollectionStore('route', tripId, { sort: 'sort_order' });
 		itineraryStore = createTripCollectionStore('itinerary', tripId, { sort: 'sort_order' });
 
-		unsubMembers = membersStore.subscribe((val) => (members = val));
-		unsubGroup = groupItemsStore.subscribe((val) => (groupItems = val));
-		unsubPersonal = personalItemsStore.subscribe((val) => (personalItems = val));
-		unsubRoute = routeStore.subscribe((val) => (routeStops = val));
-		unsubItinerary = itineraryStore.subscribe((val) => (itineraryEntries = val));
+		unsubMembers = membersStore.subscribe((val: any[]) => (members = val));
+		unsubGroup = groupItemsStore.subscribe((val: any[]) => (groupItems = val));
+		unsubPersonal = personalItemsStore.subscribe((val: any[]) => (personalItems = val));
+		unsubRoute = routeStore.subscribe((val: any[]) => (routeStops = val));
+		unsubItinerary = itineraryStore.subscribe((val: any[]) => (itineraryEntries = val));
 
 		membersStore.init();
 		groupItemsStore.init();
@@ -267,93 +265,106 @@
 	<title>{trip ? `${trip.name} · SummitSync` : 'Trip View'}</title>
 </svelte:head>
 
-<div class="workspace-wrap">
-	{#if loadingTrip}
-		<div class="loading-state" role="status" aria-label="Loading trip workspace">
-			<div class="spinner"></div>
-			<p>Loading trip workspace...</p>
-		</div>
-	{:else if !trip}
-		<div class="card error-card">
-			<h2>Trip Not Found</h2>
-			<p>This trip link may be invalid or the trip was deleted.</p>
-			<a href="/" class="btn btn-primary">Back to Trips</a>
-		</div>
-	{:else}
-		<!-- Header -->
-		<header class="workspace-header">
-			<div class="header-left">
-				<a href="/" class="back-link">
-					<ChevronLeft size={16} />
-					<span>All Trips</span>
-				</a>
+<div class="min-h-screen bg-slate-50/50 pb-20 sm:pb-12">
+	<AppHeader>
+		{#snippet children()}
+			<span class="truncate max-w-[200px] font-medium text-slate-700">{trip?.name || 'Trip'}</span>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="outline" size="sm" onclick={copyTripLink} class="gap-1.5">
+				<Share2 class="h-3.5 w-3.5" />
+				<span class="hidden sm:inline">Share Link</span>
+			</Button>
+			{#if !isOwner}
+				<Button variant="secondary" size="sm" onclick={() => (isUnlockModalOpen = true)} class="gap-1.5">
+					<KeyRound class="h-3.5 w-3.5" />
+					<span class="hidden sm:inline">Unlock PIN</span>
+				</Button>
+			{/if}
+		{/snippet}
+	</AppHeader>
 
-				<div class="title-meta-row">
-					<h1 class="trip-title">{trip.name}</h1>
-					{#if trip.date}
-						<div class="trip-date-tag">
-							<Calendar size={13} />
-							<span>{trip.date}</span>
-						</div>
-					{/if}
-					{#if isOwner}
-						<div class="owner-pill">
-							<Crown size={12} />
-							<span>Organizer Mode</span>
-						</div>
+	<PageContainer>
+		{#if loadingTrip}
+			<div class="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+				<div class="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900"></div>
+				<p class="text-sm">Loading trip workspace...</p>
+			</div>
+		{:else if !trip}
+			<Card.Card class="text-center p-8">
+				<Card.CardHeader>
+					<Card.CardTitle class="text-xl">Trip Not Found</Card.CardTitle>
+					<Card.CardDescription>This trip link may be invalid or the trip was deleted.</Card.CardDescription>
+				</Card.CardHeader>
+				<Card.CardContent>
+					<Button href="/" variant="default">Back to Trips</Button>
+				</Card.CardContent>
+			</Card.Card>
+		{:else}
+			<!-- Workspace Header -->
+			<div class="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start">
+				<div class="space-y-2">
+					<div class="flex items-center gap-2">
+						<a href="/" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900">
+							<ChevronLeft class="h-3.5 w-3.5" />
+							<span>All Trips</span>
+						</a>
+					</div>
+
+					<div class="flex flex-wrap items-center gap-2.5">
+						<h1 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+							{trip.name}
+						</h1>
+						{#if trip.date}
+							<Badge variant="success" class="gap-1">
+								<Calendar class="h-3 w-3" />
+								<span>{trip.date}</span>
+							</Badge>
+						{/if}
+						{#if isOwner}
+							<Badge variant="warning" class="gap-1">
+								<Crown class="h-3 w-3" />
+								<span>Organizer Mode</span>
+							</Badge>
+						{/if}
+					</div>
+
+					{#if trip.description}
+						<p class="max-w-2xl text-sm text-slate-600 leading-relaxed">
+							{trip.description}
+						</p>
 					{/if}
 				</div>
 
-				{#if trip.description}
-					<p class="trip-description">{trip.description}</p>
-				{/if}
+				<div class="flex flex-wrap items-center gap-2">
+					{#if isOwner}
+						<Button
+							variant="destructive"
+							size="sm"
+							onclick={handleDeleteTrip}
+							disabled={deletingTrip}
+							class="gap-1.5"
+						>
+							<Trash2 class="h-3.5 w-3.5" />
+							<span>{deletingTrip ? 'Deleting...' : 'Delete Trip'}</span>
+						</Button>
+					{/if}
+				</div>
 			</div>
 
-			<div class="header-actions">
-				{#if !isOwner}
-					<button
-						class="btn btn-secondary btn-unlock"
-						onclick={() => unlockModalEl?.showModal()}
-						title="Enter PIN for organizer access"
-					>
-						<KeyRound size={15} />
-						<span>Organizer Unlock</span>
-					</button>
-				{/if}
+			<!-- Navigation Tabs -->
+			<TabNav
+				{activeTab}
+				memberCount={members.length}
+				groupItemCount={groupItems.length}
+				personalItemCount={personalItems.length}
+				routeCount={routeStops.length}
+				itineraryCount={itineraryEntries.length}
+				onSelectTab={(tabId) => (activeTab = tabId)}
+			/>
 
-				<button class="btn btn-secondary" onclick={copyTripLink} title="Copy shareable link">
-					<Share2 size={15} />
-					<span>Share Link</span>
-				</button>
-
-				{#if isOwner}
-					<button
-						class="btn btn-danger-outline"
-						onclick={handleDeleteTrip}
-						disabled={deletingTrip}
-						title="Delete trip"
-					>
-						<Trash2 size={15} />
-						<span>{deletingTrip ? 'Deleting...' : 'Delete'}</span>
-					</button>
-				{/if}
-			</div>
-		</header>
-
-		<!-- Tabs -->
-		<TabNav
-			{activeTab}
-			memberCount={members.length}
-			groupItemCount={groupItems.length}
-			personalItemCount={personalItems.length}
-			routeCount={routeStops.length}
-			itineraryCount={itineraryEntries.length}
-			onSelectTab={(tabId) => (activeTab = tabId)}
-		/>
-
-		<!-- Tab Content -->
-		<main id="main-content">
-			<div class="workspace-content" role="tabpanel" aria-labelledby="tab-{activeTab}">
+			<!-- Active Tab View -->
+			<div role="tabpanel" aria-labelledby="tab-{activeTab}">
 				{#if activeTab === 'checklist'}
 					<ChecklistTab
 						{groupItems}
@@ -361,12 +372,12 @@
 						{members}
 						{currentMemberId}
 						{isOwner}
-						onAddGroupItem={(data) => groupItemsStore.create(data)}
-						onUpdateGroupItem={(id, data) => groupItemsStore.updateRecord(id, data)}
-						onDeleteGroupItem={(id) => groupItemsStore.deleteRecord(id)}
-						onAddPersonalItem={(data) => personalItemsStore.create(data)}
-						onUpdatePersonalItem={(id, data) => personalItemsStore.updateRecord(id, data)}
-						onDeletePersonalItem={(id) => personalItemsStore.deleteRecord(id)}
+						onAddGroupItem={(data: any) => groupItemsStore.create(data)}
+						onUpdateGroupItem={(id: string, data: any) => groupItemsStore.updateRecord(id, data)}
+						onDeleteGroupItem={(id: string) => groupItemsStore.deleteRecord(id)}
+						onAddPersonalItem={(data: any) => personalItemsStore.create(data)}
+						onUpdatePersonalItem={(id: string, data: any) => personalItemsStore.updateRecord(id, data)}
+						onDeletePersonalItem={(id: string) => personalItemsStore.deleteRecord(id)}
 					/>
 				{:else if activeTab === 'members'}
 					<MembersTab
@@ -381,27 +392,26 @@
 					<RouteTab
 						{routeStops}
 						{isOwner}
-						onAddStop={(data) => routeStore.create(data)}
-						onUpdateStop={(id, data) => routeStore.updateRecord(id, data)}
-						onDeleteStop={(id) => routeStore.deleteRecord(id)}
-						onReorderStops={handleReorderRoute}
+						onAddStop={(data: any) => routeStore.create(data)}
+						onUpdateStop={(id: string, data: any) => routeStore.updateRecord(id, data)}
+						onDeleteStop={(id: string) => routeStore.deleteRecord(id)}
 					/>
 				{:else if activeTab === 'itinerary'}
 					<ItineraryTab
 						{itineraryEntries}
 						{isOwner}
-						onAddEntry={(data) => itineraryStore.create(data)}
-						onUpdateEntry={(id, data) => itineraryStore.updateRecord(id, data)}
-						onDeleteEntry={(id) => itineraryStore.deleteRecord(id)}
+						onAddEntry={(data: any) => itineraryStore.create(data)}
+						onUpdateEntry={(id: string, data: any) => itineraryStore.updateRecord(id, data)}
+						onDeleteEntry={(id: string) => itineraryStore.deleteRecord(id)}
 					/>
 				{/if}
 			</div>
-		</main>
-	{/if}
+		{/if}
+	</PageContainer>
 </div>
 
 <NamePromptModal
-	bind:this={namePromptModalEl}
+	bind:open={isNamePromptOpen}
 	{members}
 	submitting={submittingName}
 	onSubmit={handleJoinName}
@@ -409,203 +419,7 @@
 />
 
 <OrganizerUnlockModal
-	bind:this={unlockModalEl}
+	bind:open={isUnlockModalOpen}
 	submitting={verifyingPin}
 	onUnlock={handleUnlockOrganizer}
-	onClose={() => unlockModalEl?.close()}
 />
-
-<style>
-	.workspace-wrap {
-		max-width: 1040px;
-		margin: 0 auto;
-		padding: calc(32px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px)) calc(80px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
-		width: 100%;
-	}
-
-	.workspace-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 24px;
-		gap: 20px;
-		flex-wrap: wrap;
-	}
-
-	.header-left {
-		flex: 1;
-		min-width: 280px;
-	}
-
-	.back-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		margin-bottom: 10px;
-		transition: color 0.15s ease;
-	}
-
-	.back-link:hover {
-		color: var(--text-main);
-	}
-
-	.title-meta-row {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-		margin-bottom: 6px;
-	}
-
-	.trip-title {
-		font-size: 1.75rem;
-		font-weight: 800;
-		color: var(--text-main);
-		line-height: 1.25;
-		letter-spacing: -0.02em;
-	}
-
-	.trip-date-tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		background: var(--color-emerald-light);
-		color: var(--color-emerald);
-		padding: 3px 10px;
-		border-radius: var(--radius-full);
-	}
-
-	.owner-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 0.775rem;
-		font-weight: 700;
-		background: var(--color-amber-light);
-		color: var(--color-amber);
-		padding: 3px 10px;
-		border-radius: var(--radius-full);
-		border: 1px solid rgba(217, 119, 6, 0.2);
-	}
-
-	.trip-description {
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-		max-width: 620px;
-		line-height: 1.5;
-	}
-
-	.header-actions {
-		display: flex;
-		gap: 8px;
-		align-items: center;
-		flex-wrap: wrap;
-	}
-
-	.btn-unlock {
-		background: var(--color-primary-subtle);
-		border-color: var(--border-default);
-	}
-
-	.btn-danger-outline {
-		background: var(--bg-surface);
-		border: 1px solid var(--color-danger-border);
-		color: var(--color-danger);
-	}
-
-	.btn-danger-outline:hover:not(:disabled) {
-		background: var(--color-danger-light);
-	}
-
-	.btn-danger-outline:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.loading-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 100px 0;
-		color: var(--text-muted);
-		gap: 12px;
-		font-size: 0.9rem;
-	}
-
-	.spinner {
-		width: 32px;
-		height: 32px;
-		border: 2.5px solid var(--border-default);
-		border-top-color: var(--text-main);
-		border-radius: 50%;
-		animation: spin 0.7s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.error-card {
-		text-align: center;
-		padding: 60px 24px;
-		background: var(--bg-surface);
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--border-default);
-	}
-
-	.error-card h2 {
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--text-main);
-		margin-bottom: 6px;
-	}
-
-	.error-card p {
-		color: var(--text-secondary);
-		margin-bottom: 20px;
-	}
-
-	@media (max-width: 640px) {
-		.workspace-wrap {
-			padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(88px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
-		}
-
-		.workspace-header {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 14px;
-			margin-bottom: 18px;
-		}
-
-		.header-left {
-			min-width: 0;
-		}
-
-		.trip-title {
-			font-size: 1.35rem;
-			word-break: break-word;
-		}
-
-		.header-actions {
-			width: 100%;
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-			gap: 8px;
-		}
-
-		.header-actions .btn {
-			min-height: 44px;
-			justify-content: center;
-			font-size: 0.85rem;
-			padding: 8px 12px;
-		}
-	}
-</style>

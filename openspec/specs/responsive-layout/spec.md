@@ -23,15 +23,23 @@ Multi-column form layouts (organizer name/PIN grid, date range grid) SHALL colla
 - **THEN** the organizer name and PIN fields MUST render stacked vertically, not side-by-side
 
 ### Requirement: Tab navigation adapts to mobile
-The tab navigation SHALL remain fully operable on narrow viewports. Tab labels MAY be hidden in favor of icon-only display below 480px. When tabs overflow the visible area, a visual affordance (e.g., fade/gradient or partial tab visibility) SHALL indicate that more tabs exist.
+The tab navigation SHALL remain fully operable and descriptive on narrow viewports (below 640px). Tab labels SHALL remain visible alongside icons and badge counts, utilizing an adaptive layout (such as a 4-column bottom navigation bar or compact equal-width segmented control) without truncating or entirely hiding tab labels.
 
 #### Scenario: Tab labels hidden on small screen
 - **WHEN** the viewport is below 480px
-- **THEN** tabs MUST display icons only (no text labels) and each tab MUST retain its `aria-label` for accessibility
+- **THEN** tabs MUST display icons and compact labels and each tab MUST retain its `aria-label` for accessibility
 
 #### Scenario: Scroll affordance when tabs overflow
 - **WHEN** tabs overflow the visible navigation area on a narrow viewport
-- **THEN** a visual indicator MUST signal that the user can scroll to see more tabs
+- **THEN** a visual indicator MUST signal that the user can scroll to see more tabs or tabs render in fixed equal columns
+
+#### Scenario: Mobile tab bar rendering
+- **WHEN** the viewport width is below 640px
+- **THEN** all tabs display an icon, concise text label, and count badge in a balanced touch-friendly layout
+
+#### Scenario: Tab selection on mobile
+- **WHEN** a user taps any tab in the mobile navigation
+- **THEN** the active tab view is displayed and the active state is visually highlighted with high contrast
 
 ### Requirement: Touch targets meet minimum size
 All interactive elements (buttons, checkboxes, links) SHALL have a minimum touch target size of 44x44 CSS pixels on viewports below 768px, per WCAG 2.5.8.
@@ -53,3 +61,17 @@ The page body SHALL never produce a horizontal scrollbar on any supported viewpo
 #### Scenario: Landing page at 320px viewport
 - **WHEN** the viewport is 320px wide
 - **THEN** the page body MUST not have horizontal overflow
+
+### Requirement: Mobile form input zoom prevention
+All text inputs, number inputs, select dropdowns, and textareas SHALL use a minimum font size of 16px (1rem) on mobile viewports below 640px to prevent automatic viewport zoom in iOS Safari.
+
+#### Scenario: User focuses input on iOS device
+- **WHEN** a user taps a text or dropdown input on an iPhone / iOS browser
+- **THEN** the browser focuses the field without triggering an automatic page zoom
+
+### Requirement: Mobile vertical timeline view
+Route stops and Itinerary events SHALL render as connected vertical timelines with touch-friendly actions on viewports below 640px.
+
+#### Scenario: Route stops on mobile
+- **WHEN** route stops are displayed on a viewport below 640px
+- **THEN** stops render in a vertical sequence connected by a timeline spine with minimum 44px touch targets for reordering and editing

@@ -1,184 +1,70 @@
-<script>
-	import { showToast } from '$lib/toast.js';
-	import { KeyRound, X, ArrowRight } from 'lucide-svelte';
+<script lang="ts">
+	import * as Dialog from '$lib/components/ui/dialog';
+	import Button from '$lib/components/ui/button/Button.svelte';
+	import Input from '$lib/components/ui/input/Input.svelte';
+	import { KeyRound, ArrowRight } from 'lucide-svelte';
+
+	interface Props {
+		open?: boolean;
+		submitting?: boolean;
+		onUnlock: (pin: string) => void;
+	}
 
 	let {
+		open = $bindable(false),
 		submitting = false,
-		onUnlock,
-		onClose
-	} = $props();
+		onUnlock
+	}: Props = $props();
 
-	let dialogEl = $state();
 	let enteredPin = $state('');
 
-	export function showModal() {
-		dialogEl?.showModal();
-	}
-
-	export function close() {
-		dialogEl?.close();
-	}
-
-	function handleSubmit(e) {
+	function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!enteredPin.trim()) return;
 		onUnlock(enteredPin.trim());
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="modal-dialog"
-	onclose={onClose}
->
-	<div class="modal-card">
-		<div class="modal-head">
-			<div class="icon-wrap">
-				<KeyRound size={22} />
-			</div>
-			<button type="button" class="btn-close" onclick={() => dialogEl?.close()} aria-label="Close modal">
-				<X size={18} />
-			</button>
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-[400px]">
+		<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-800 mb-1">
+			<KeyRound class="h-6 w-6 text-slate-700" />
 		</div>
+		<Dialog.Header class="text-center sm:text-center">
+			<Dialog.Title class="text-xl font-bold">Organizer PIN Unlock</Dialog.Title>
+			<Dialog.Description>
+				Enter the trip organizer PIN to unlock owner permissions.
+			</Dialog.Description>
+		</Dialog.Header>
 
-		<h2 class="modal-title">Organizer PIN Unlock</h2>
-		<p class="modal-desc">Enter the trip organizer PIN to unlock owner permissions (edit route, itinerary, and group gear).</p>
-
-		<form onsubmit={handleSubmit} class="pin-form">
-			<div class="input-wrap">
-				<input
+		<form onsubmit={handleSubmit} class="space-y-4 pt-2">
+			<div>
+				<Input
 					type="password"
 					bind:value={enteredPin}
-					placeholder="Enter 4-6 digit PIN"
+					placeholder="Enter PIN"
+					maxlength={10}
+					class="text-center tracking-widest font-mono text-base"
 					required
-					maxlength="10"
-					class="pin-field"
 				/>
 			</div>
 
-			<div class="modal-actions">
-				<button type="button" class="btn btn-secondary" onclick={() => dialogEl?.close()} disabled={submitting}>
+			<Dialog.Footer class="pt-2 flex-row gap-2 justify-end">
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => (open = false)}
+					disabled={submitting}
+				>
 					Cancel
-				</button>
-				<button type="submit" class="btn btn-primary" disabled={submitting || !enteredPin.trim()}>
-					<span>{submitting ? 'Verifying...' : 'Unlock Permissions'}</span>
+				</Button>
+				<Button type="submit" disabled={submitting || !enteredPin.trim()} class="gap-1.5">
+					<span>{submitting ? 'Verifying...' : 'Unlock'}</span>
 					{#if !submitting}
-						<ArrowRight size={16} />
+						<ArrowRight class="h-4 w-4" />
 					{/if}
-				</button>
-			</div>
+				</Button>
+			</Dialog.Footer>
 		</form>
-	</div>
-</dialog>
-
-<style>
-	.modal-dialog {
-		margin: auto;
-		border: none;
-		background: transparent;
-		padding: 20px;
-		max-width: calc(100vw - 32px);
-	}
-
-	.modal-dialog::backdrop {
-		background: rgba(15, 23, 42, 0.45);
-		backdrop-filter: blur(5px);
-	}
-
-	.modal-card {
-		background: var(--bg-surface);
-		width: 100%;
-		max-width: 400px;
-		border-radius: var(--radius-lg);
-		padding: 28px 24px;
-		box-shadow: var(--shadow-modal);
-		border: 1px solid var(--border-default);
-		animation: popUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	@keyframes popUp {
-		from {
-			transform: scale(0.96);
-			opacity: 0;
-		}
-		to {
-			transform: scale(1);
-			opacity: 1;
-		}
-	}
-
-	.modal-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 16px;
-	}
-
-	.icon-wrap {
-		width: 44px;
-		height: 44px;
-		border-radius: var(--radius-full);
-		background: var(--bg-subtle);
-		color: var(--text-main);
-		display: grid;
-		place-content: center;
-	}
-
-	.btn-close {
-		color: var(--text-muted);
-		padding: 6px;
-		border-radius: var(--radius-sm);
-		display: grid;
-		place-content: center;
-		transition: all 0.15s ease;
-	}
-
-	.btn-close:hover {
-		color: var(--text-main);
-		background: var(--bg-subtle);
-	}
-
-	.modal-title {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: var(--text-main);
-		margin-bottom: 6px;
-		letter-spacing: -0.01em;
-	}
-
-	.modal-desc {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-bottom: 20px;
-		line-height: 1.5;
-	}
-
-	.pin-form {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.pin-field {
-		width: 100%;
-		padding: 11px 14px;
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		font-size: 1rem;
-		background: var(--bg-surface);
-		outline: none;
-		text-align: center;
-		letter-spacing: 0.1em;
-		transition: border-color 0.15s ease;
-	}
-
-	.pin-field:focus {
-		border-color: var(--border-focus);
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 10px;
-	}
-</style>
+	</Dialog.Content>
+</Dialog.Root>

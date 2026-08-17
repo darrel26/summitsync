@@ -1,31 +1,40 @@
-<script>
+<script lang="ts">
+	import * as Dialog from '$lib/components/ui/dialog';
+	import Button from '$lib/components/ui/button/Button.svelte';
+	import Input from '$lib/components/ui/input/Input.svelte';
 	import { Sparkles, User, ArrowRight, UserCheck } from 'lucide-svelte';
 
+	interface Member {
+		id: string;
+		name: string;
+		role?: string;
+	}
+
+	interface Props {
+		open?: boolean;
+		members?: Member[];
+		submitting?: boolean;
+		onSubmit: (name: string) => void;
+		onClaim?: (member: Member) => void;
+	}
+
 	let {
+		open = $bindable(false),
 		members = [],
 		submitting = false,
 		onSubmit,
 		onClaim
-	} = $props();
+	}: Props = $props();
 
-	let dialogEl = $state();
 	let inputName = $state('');
 
-	export function showModal() {
-		dialogEl?.showModal();
-	}
-
-	export function close() {
-		dialogEl?.close();
-	}
-
-	function handleSubmit(e) {
+	function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!inputName.trim()) return;
 		onSubmit(inputName.trim());
 	}
 
-	function handleSelectMember(member) {
+	function handleSelectMember(member: Member) {
 		if (onClaim) {
 			onClaim(member);
 		} else {
@@ -34,248 +43,67 @@
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="modal-dialog"
-	onclose={() => {}}
->
-	<div class="modal-card">
-		<div class="modal-icon-wrap">
-			<Sparkles size={24} class="modal-icon" />
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-[420px] text-center">
+		<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-800 mb-1">
+			<Sparkles class="h-6 w-6 text-amber-500" />
 		</div>
-		<h2 class="modal-title">Join Trip Workspace</h2>
-		<p class="modal-desc">Select your profile or enter your name to collaborate.</p>
+		<Dialog.Header class="text-center sm:text-center">
+			<Dialog.Title class="text-xl font-bold">Join Trip Workspace</Dialog.Title>
+			<Dialog.Description>
+				Select your profile or enter your name to collaborate.
+			</Dialog.Description>
+		</Dialog.Header>
 
 		{#if members && members.length > 0}
-			<div class="roster-section">
-				<span class="roster-label">Are you on the roster?</span>
-				<div class="roster-chips">
+			<div class="my-2 text-left">
+				<span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+					Are you on the roster?
+				</span>
+				<div class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
 					{#each members as member}
 						<button
 							type="button"
-							class="roster-chip"
+							class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
 							onclick={() => handleSelectMember(member)}
 							disabled={submitting}
 						>
-							<div class="chip-avatar">{member.name.charAt(0).toUpperCase()}</div>
-							<span class="chip-name">{member.name}</span>
-							<UserCheck size={13} class="chip-check" />
+							<span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold border border-slate-200">
+								{member.name.charAt(0).toUpperCase()}
+							</span>
+							<span>{member.name}</span>
+							<UserCheck class="h-3 w-3 text-emerald-600 opacity-70" />
 						</button>
 					{/each}
 				</div>
-				<div class="divider">
-					<span>or join as new</span>
+
+				<div class="relative my-4 flex items-center justify-center">
+					<div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+					<span class="relative bg-white px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+						or join as new
+					</span>
 				</div>
 			</div>
 		{/if}
 
-		<form onsubmit={handleSubmit} class="join-form">
-			<div class="input-wrapper">
-				<User size={16} class="field-icon" />
-				<input
-					type="text"
+		<form onsubmit={handleSubmit} class="space-y-4 pt-1">
+			<div class="relative flex items-center">
+				<User class="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+				<Input
 					bind:value={inputName}
 					placeholder="What's your name? (e.g. Alex)"
+					maxlength={40}
+					class="pl-9"
 					required
-					maxlength="40"
-					class="name-field"
 				/>
 			</div>
 
-			<button type="submit" class="btn btn-primary btn-block" disabled={submitting || !inputName.trim()}>
+			<Button type="submit" class="w-full gap-2" disabled={submitting || !inputName.trim()}>
 				<span>{submitting ? 'Joining...' : 'Continue to Workspace'}</span>
 				{#if !submitting}
-					<ArrowRight size={16} />
+					<ArrowRight class="h-4 w-4" />
 				{/if}
-			</button>
+			</Button>
 		</form>
-	</div>
-</dialog>
-
-<style>
-	.modal-dialog {
-		margin: auto;
-		border: none;
-		background: transparent;
-		padding: 20px;
-		max-width: calc(100vw - 32px);
-	}
-
-	.modal-dialog::backdrop {
-		background: rgba(15, 23, 42, 0.45);
-		backdrop-filter: blur(5px);
-	}
-
-	.modal-card {
-		background: var(--bg-surface);
-		width: 100%;
-		max-width: 420px;
-		border-radius: var(--radius-lg);
-		padding: 28px 24px;
-		text-align: center;
-		box-shadow: var(--shadow-modal);
-		border: 1px solid var(--border-default);
-		animation: popUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	@keyframes popUp {
-		from {
-			transform: scale(0.96);
-			opacity: 0;
-		}
-		to {
-			transform: scale(1);
-			opacity: 1;
-		}
-	}
-
-	.modal-icon-wrap {
-		width: 48px;
-		height: 48px;
-		border-radius: var(--radius-full);
-		background: var(--bg-subtle);
-		color: var(--text-main);
-		display: grid;
-		place-content: center;
-		margin: 0 auto 14px;
-	}
-
-	.modal-title {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--text-main);
-		margin-bottom: 6px;
-		letter-spacing: -0.01em;
-	}
-
-	.modal-desc {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		margin-bottom: 20px;
-		line-height: 1.5;
-	}
-
-	.roster-section {
-		margin-bottom: 18px;
-		text-align: left;
-	}
-
-	.roster-label {
-		display: block;
-		font-size: 0.775rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--text-muted);
-		margin-bottom: 8px;
-	}
-
-	.roster-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		max-height: 140px;
-		overflow-y: auto;
-		padding: 2px;
-	}
-
-	.roster-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 12px 6px 6px;
-		border-radius: var(--radius-full);
-		background: var(--bg-subtle);
-		border: 1px solid var(--border-default);
-		color: var(--text-main);
-		font-size: 0.85rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		min-height: 36px;
-	}
-
-	.roster-chip:hover {
-		border-color: var(--color-emerald-border);
-		background: var(--color-emerald-light);
-		color: var(--color-emerald);
-	}
-
-	.chip-avatar {
-		width: 24px;
-		height: 24px;
-		border-radius: var(--radius-full);
-		background: var(--bg-surface);
-		display: grid;
-		place-content: center;
-		font-size: 0.75rem;
-		font-weight: 700;
-		border: 1px solid var(--border-default);
-	}
-
-	:global(.chip-check) {
-		color: var(--color-emerald);
-		opacity: 0.7;
-	}
-
-	.divider {
-		display: flex;
-		align-items: center;
-		text-align: center;
-		margin: 16px 0 12px;
-		color: var(--text-muted);
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.divider::before,
-	.divider::after {
-		content: '';
-		flex: 1;
-		border-bottom: 1px solid var(--border-default);
-	}
-
-	.divider span {
-		padding: 0 10px;
-	}
-
-	.join-form {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-
-	.input-wrapper {
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-
-	:global(.field-icon) {
-		position: absolute;
-		left: 14px;
-		color: var(--text-muted);
-		pointer-events: none;
-	}
-
-	.name-field {
-		width: 100%;
-		padding: 11px 14px 11px 40px;
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		font-size: 1rem;
-		background: var(--bg-surface);
-		outline: none;
-		transition: border-color 0.15s ease;
-	}
-
-	.name-field:focus {
-		border-color: var(--border-focus);
-	}
-
-	.btn-block {
-		width: 100%;
-		min-height: 44px;
-	}
-</style>
+	</Dialog.Content>
+</Dialog.Root>

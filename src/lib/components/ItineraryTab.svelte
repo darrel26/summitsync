@@ -1,5 +1,9 @@
-<script>
+<script lang="ts">
 	import { showToast } from '$lib/toast.js';
+	import * as Card from '$lib/components/ui/card';
+	import Button from '$lib/components/ui/button/Button.svelte';
+	import Input from '$lib/components/ui/input/Input.svelte';
+	import Badge from '$lib/components/ui/badge/Badge.svelte';
 	import {
 		Plus,
 		ChevronUp,
@@ -12,13 +16,30 @@
 		Clock
 	} from 'lucide-svelte';
 
+	interface ItineraryEntry {
+		id: string;
+		day?: number;
+		title: string;
+		time?: string;
+		description?: string;
+		sort_order?: number;
+	}
+
+	interface Props {
+		itineraryEntries?: ItineraryEntry[];
+		isOwner?: boolean;
+		onAddEntry: (data: any) => Promise<any>;
+		onUpdateEntry: (id: string, data: any) => Promise<any>;
+		onDeleteEntry: (id: string) => Promise<any>;
+	}
+
 	let {
 		itineraryEntries = [],
 		isOwner = false,
 		onAddEntry,
 		onUpdateEntry,
 		onDeleteEntry
-	} = $props();
+	}: Props = $props();
 
 	let newDay = $state(1);
 	let newTitle = $state('');
@@ -26,13 +47,13 @@
 	let newDescription = $state('');
 	let adding = $state(false);
 
-	let editingEntryId = $state(null);
+	let editingEntryId = $state<string | null>(null);
 	let editDay = $state(1);
 	let editTitle = $state('');
 	let editTime = $state('');
 	let editDescription = $state('');
 
-	let selectedDayFilter = $state('all');
+	let selectedDayFilter = $state<string | number>('all');
 
 	let sortedEntries = $derived([...itineraryEntries].sort((a, b) => {
 		if ((a.day ?? 0) !== (b.day ?? 0)) {
@@ -41,7 +62,6 @@
 		return (a.sort_order ?? 0) - (b.sort_order ?? 0);
 	}));
 
-	// Get unique days for quick-filter tabs
 	let availableDays = $derived(
 		Array.from(new Set(sortedEntries.map((e) => e.day || 1))).sort((a, b) => a - b)
 	);
@@ -52,7 +72,7 @@
 			: sortedEntries.filter((e) => (e.day || 1) === selectedDayFilter)
 	);
 
-	async function handleAddEntry(e) {
+	async function handleAddEntry(e: SubmitEvent) {
 		e.preventDefault();
 		if (!newTitle.trim()) return;
 
@@ -78,7 +98,7 @@
 		}
 	}
 
-	function startEdit(entry) {
+	function startEdit(entry: ItineraryEntry) {
 		editingEntryId = entry.id;
 		editDay = entry.day ?? 1;
 		editTitle = entry.title;
@@ -86,7 +106,7 @@
 		editDescription = entry.description || '';
 	}
 
-	async function saveEdit(id) {
+	async function saveEdit(id: string) {
 		if (!editTitle.trim()) return;
 		try {
 			await onUpdateEntry(id, {
@@ -103,7 +123,7 @@
 		}
 	}
 
-	async function handleDelete(entry) {
+	async function handleDelete(entry: ItineraryEntry) {
 		if (confirm(`Delete "${entry.title}"?`)) {
 			try {
 				await onDeleteEntry(entry.id);
@@ -115,7 +135,7 @@
 		}
 	}
 
-	async function moveEntry(index, direction) {
+	async function moveEntry(index: number, direction: number) {
 		const targetIndex = index + direction;
 		if (targetIndex < 0 || targetIndex >= sortedEntries.length) return;
 
@@ -140,496 +160,177 @@
 	}
 </script>
 
-<div class="itinerary-layout">
+<div class="space-y-6">
 	<!-- Add Event Card -->
 	{#if isOwner}
-		<div class="card add-card">
-			<div class="card-header">
-				<h2 class="card-title">Schedule Activity / Event</h2>
-				<p class="card-sub">Add timeline events, summit pushes, meal times, and rest stops.</p>
-			</div>
+		<Card.Card>
+			<Card.CardHeader class="pb-3">
+				<Card.CardTitle class="text-base font-bold">Schedule Activity / Event</Card.CardTitle>
+				<Card.CardDescription>Add timeline events, summit pushes, meal times, and rest stops.</Card.CardDescription>
+			</Card.CardHeader>
 
-			<form onsubmit={handleAddEntry} class="add-event-form">
-				<div class="event-form-grid">
-					<div class="field-wrap field-day">
-						<label for="entry-day">Day</label>
-						<input id="entry-day" type="number" min="1" max="30" bind:value={newDay} />
+			<Card.CardContent>
+				<form onsubmit={handleAddEntry} class="space-y-3">
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-6">
+						<div class="sm:col-span-1">
+							<Input type="number" min="1" max="30" bind:value={newDay} placeholder="Day" />
+						</div>
+						<div class="sm:col-span-2">
+							<Input type="text" placeholder="e.g. 05:00 AM" bind:value={newTime} />
+						</div>
+						<div class="sm:col-span-3">
+							<Input type="text" placeholder="Activity Title (e.g. Summit Attack)" bind:value={newTitle} required />
+						</div>
 					</div>
-					<div class="field-wrap field-time">
-						<label for="entry-time">Time</label>
-						<input id="entry-time" type="text" placeholder="e.g. 05:00 AM" bind:value={newTime} />
-					</div>
-					<div class="field-wrap field-title">
-						<label for="entry-title">Activity Title <span class="required">*</span></label>
-						<input id="entry-title" type="text" placeholder="e.g. Summit Attack to Surya Kencana" bind:value={newTitle} required />
-					</div>
-				</div>
 
-				<div class="notes-row">
-					<input
-						type="text"
-						placeholder="Activity details & requirements (e.g. Bring headlamps, warm jackets, 1L water)..."
-						bind:value={newDescription}
-						class="input-notes"
-					/>
-					<button type="submit" class="btn btn-primary" disabled={adding || !newTitle.trim()}>
-						<Plus size={16} />
-						<span>{adding ? 'Adding...' : 'Add Event'}</span>
-					</button>
-				</div>
-			</form>
-		</div>
+					<div class="flex flex-col sm:flex-row gap-2">
+						<Input
+							type="text"
+							placeholder="Activity details & requirements (e.g. Bring headlamps)..."
+							bind:value={newDescription}
+							class="flex-1"
+						/>
+						<Button type="submit" disabled={adding || !newTitle.trim()} class="gap-1.5 shrink-0">
+							<Plus class="h-4 w-4" />
+							<span>{adding ? 'Adding...' : 'Add Event'}</span>
+						</Button>
+					</div>
+				</form>
+			</Card.CardContent>
+		</Card.Card>
 	{:else}
-		<div class="view-only-banner">
-			<span>🔒 View-Only Mode — Itinerary activities and schedules are maintained by the trip organizer.</span>
+		<div class="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600 shadow-sm">
+			🔒 View-Only Mode — Itinerary activities and schedules are maintained by the trip organizer.
 		</div>
 	{/if}
 
 	<!-- Itinerary Timeline Card -->
-	<div class="card timeline-card">
-		<div class="card-header flex-between">
+	<Card.Card>
+		<Card.CardHeader class="flex flex-row items-center justify-between space-y-0 pb-4">
 			<div>
-				<h2 class="card-title">Chronological Itinerary</h2>
-				<p class="card-sub">Day-by-day plan of events</p>
+				<Card.CardTitle class="text-base font-bold">Chronological Itinerary</Card.CardTitle>
+				<Card.CardDescription>Day-by-day plan of events</Card.CardDescription>
 			</div>
-			<div class="count-pill">
-				<CalendarDays size={13} />
+			<Badge variant="secondary" class="gap-1">
+				<CalendarDays class="h-3 w-3" />
 				<span>{sortedEntries.length} events</span>
-			</div>
-		</div>
+			</Badge>
+		</Card.CardHeader>
 
-		<!-- Day Filter Pill Nav (if multiple days exist) -->
-		{#if availableDays.length > 1}
-			<div class="day-filter-bar">
-				<button
-					type="button"
-					class="day-filter-pill"
-					class:active={selectedDayFilter === 'all'}
-					onclick={() => (selectedDayFilter = 'all')}
-				>
-					All Days
-				</button>
-				{#each availableDays as dayNum}
-					<button
-						type="button"
-						class="day-filter-pill"
-						class:active={selectedDayFilter === dayNum}
-						onclick={() => (selectedDayFilter = dayNum)}
+		<Card.CardContent class="space-y-4">
+			{#if availableDays.length > 1}
+				<div class="flex flex-wrap gap-1.5">
+					<Button
+						variant={selectedDayFilter === 'all' ? 'default' : 'outline'}
+						size="sm"
+						class="h-7 text-xs rounded-full"
+						onclick={() => (selectedDayFilter = 'all')}
 					>
-						Day {dayNum}
-					</button>
-				{/each}
-			</div>
-		{/if}
+						All Days
+					</Button>
+					{#each availableDays as dayNum}
+						<Button
+							variant={selectedDayFilter === dayNum ? 'default' : 'outline'}
+							size="sm"
+							class="h-7 text-xs rounded-full"
+							onclick={() => (selectedDayFilter = dayNum)}
+						>
+							Day {dayNum}
+						</Button>
+					{/each}
+				</div>
+			{/if}
 
-		{#if sortedEntries.length === 0}
-			<div class="empty-state">
-				<p>No itinerary activities planned yet. Add schedule events above.</p>
-			</div>
-		{:else}
-			<div class="itinerary-timeline">
-				{#each filteredEntries as entry, index (entry.id)}
-					<div class="event-card">
-						{#if editingEntryId === entry.id}
-							<div class="edit-event-block">
-								<div class="edit-top-row">
-									<input type="number" min="1" bind:value={editDay} class="edit-day-num" placeholder="Day" />
-									<input type="text" bind:value={editTime} class="edit-time-str" placeholder="Time (e.g. 06:00 AM)" />
-									<input type="text" bind:value={editTitle} class="edit-title-str" placeholder="Activity title" />
+			{#if sortedEntries.length === 0}
+				<div class="py-8 text-center text-xs text-slate-500">
+					No itinerary activities planned yet. Add schedule events above.
+				</div>
+			{:else}
+				<div class="space-y-2">
+					{#each filteredEntries as entry, index (entry.id)}
+						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-xs">
+							{#if editingEntryId === entry.id}
+								<div class="flex-1 space-y-2">
+									<div class="grid grid-cols-1 gap-2 sm:grid-cols-6">
+										<Input type="number" min="1" bind:value={editDay} class="h-8 text-xs sm:col-span-1" />
+										<Input type="text" bind:value={editTime} class="h-8 text-xs sm:col-span-2" placeholder="Time" />
+										<Input type="text" bind:value={editTitle} class="h-8 text-xs sm:col-span-3" placeholder="Title" />
+									</div>
+									<Input type="text" bind:value={editDescription} class="h-8 text-xs" placeholder="Details" />
+									<div class="flex gap-2">
+										<Button size="sm" class="h-7 gap-1 text-xs" onclick={() => saveEdit(entry.id)}>
+											<Check class="h-3 w-3" />
+											<span>Save</span>
+										</Button>
+										<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={() => (editingEntryId = null)}>
+											<X class="h-3 w-3" />
+											<span>Cancel</span>
+										</Button>
+									</div>
 								</div>
-								<input type="text" bind:value={editDescription} class="edit-desc-str" placeholder="Activity details and notes..." />
-								<div class="edit-actions">
-									<button type="button" class="btn btn-sm btn-primary" onclick={() => saveEdit(entry.id)}>
-										<Check size={14} />
-										<span>Save</span>
-									</button>
-									<button type="button" class="btn btn-sm btn-secondary" onclick={() => (editingEntryId = null)}>
-										<X size={14} />
-										<span>Cancel</span>
-									</button>
+							{:else}
+								<div class="flex items-center gap-3">
+									<div class="flex flex-col gap-1 min-w-[75px]">
+										<Badge variant="secondary" class="w-fit text-[10px] px-1.5 py-0">Day {entry.day || 1}</Badge>
+										{#if entry.time}
+											<div class="flex items-center gap-1 font-mono text-[11px] font-semibold text-emerald-700">
+												<Clock class="h-3 w-3" />
+												<span>{entry.time}</span>
+											</div>
+										{/if}
+									</div>
+
+									<div>
+										<h3 class="text-sm font-bold text-slate-900">{entry.title}</h3>
+										{#if entry.description}
+											<p class="text-xs text-slate-500">{entry.description}</p>
+										{/if}
+									</div>
 								</div>
-							</div>
-						{:else}
-							<!-- Event Time Badge -->
-							<div class="time-col">
-								<span class="day-badge">Day {entry.day || 1}</span>
-								{#if entry.time}
-									<div class="time-badge">
-										<Clock size={12} />
-										<span>{entry.time}</span>
+
+								{#if isOwner}
+									<div class="flex items-center gap-0.5 self-end sm:self-center shrink-0">
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 w-7 p-0 text-slate-500"
+											disabled={index === 0}
+											onclick={() => moveEntry(index, -1)}
+										>
+											<ChevronUp class="h-3.5 w-3.5" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 w-7 p-0 text-slate-500"
+											disabled={index === sortedEntries.length - 1}
+											onclick={() => moveEntry(index, 1)}
+										>
+											<ChevronDown class="h-3.5 w-3.5" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 w-7 p-0 text-slate-500"
+											onclick={() => startEdit(entry)}
+										>
+											<Pencil class="h-3.5 w-3.5" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 w-7 p-0 text-slate-500 hover:text-red-600"
+											onclick={() => handleDelete(entry)}
+										>
+											<Trash2 class="h-3.5 w-3.5" />
+										</Button>
 									</div>
 								{/if}
-							</div>
-
-							<!-- Event Content -->
-							<div class="event-main">
-								<h3 class="event-title">{entry.title}</h3>
-								{#if entry.description}
-									<p class="event-description">{entry.description}</p>
-								{/if}
-							</div>
-
-							{#if isOwner}
-								<!-- Actions -->
-								<div class="event-actions">
-									<button
-										type="button"
-										class="btn-icon"
-										disabled={index === 0}
-										onclick={() => moveEntry(index, -1)}
-										title="Move up"
-										aria-label="Move event up"
-									>
-										<ChevronUp size={15} />
-									</button>
-									<button
-										type="button"
-										class="btn-icon"
-										disabled={index === sortedEntries.length - 1}
-										onclick={() => moveEntry(index, 1)}
-										title="Move down"
-										aria-label="Move event down"
-									>
-										<ChevronDown size={15} />
-									</button>
-									<button
-										type="button"
-										class="btn-icon"
-										onclick={() => startEdit(entry)}
-										title="Edit"
-										aria-label="Edit event"
-									>
-										<Pencil size={14} />
-									</button>
-									<button
-										type="button"
-										class="btn-icon btn-danger-hover"
-										onclick={() => handleDelete(entry)}
-										title="Delete"
-										aria-label="Delete event"
-									>
-										<Trash2 size={14} />
-									</button>
-								</div>
 							{/if}
-						{/if}
-					</div>
-				{/each}
-			</div>
-		{/if}
-	</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</Card.CardContent>
+	</Card.Card>
 </div>
-
-<style>
-	.view-only-banner {
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-lg);
-		padding: 14px 18px;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		box-shadow: var(--shadow-card);
-	}
-
-	.card-header {
-		margin-bottom: 18px;
-	}
-
-	.flex-between {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.card-title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--text-main);
-		letter-spacing: -0.01em;
-	}
-
-	.card-sub {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-top: 2px;
-	}
-
-	.count-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: var(--bg-subtle);
-		padding: 4px 10px;
-		border-radius: var(--radius-full);
-	}
-
-	.add-event-form {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.event-form-grid {
-		display: grid;
-		grid-template-columns: 80px 140px 1fr;
-		gap: 10px;
-	}
-
-	@media (max-width: 640px) {
-		.event-form-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	.field-wrap {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.field-wrap label {
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-	}
-
-	.required {
-		color: var(--color-danger);
-	}
-
-	input {
-		padding: 9px 12px;
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		font-size: 0.9rem;
-		outline: none;
-	}
-
-	input:focus {
-		border-color: var(--border-focus);
-	}
-
-	.notes-row {
-		display: flex;
-		gap: 10px;
-	}
-
-	.input-notes {
-		flex: 1;
-	}
-
-	/* Day Filter Bar */
-	.day-filter-bar {
-		display: flex;
-		gap: 6px;
-		margin-bottom: 16px;
-		overflow-x: auto;
-		padding-bottom: 4px;
-		scrollbar-width: none;
-		-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-		mask-image: linear-gradient(to right, black 85%, transparent 100%);
-	}
-
-	.day-filter-bar::-webkit-scrollbar {
-		display: none;
-	}
-
-	.day-filter-pill {
-		padding: 4px 12px;
-		border-radius: var(--radius-full);
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: var(--bg-subtle);
-		transition: all 0.15s ease;
-		cursor: pointer;
-	}
-
-	.day-filter-pill:hover {
-		background: var(--border-default);
-		color: var(--text-main);
-	}
-
-	.day-filter-pill.active {
-		background: var(--color-primary);
-		color: #ffffff;
-	}
-
-	/* Timeline Events */
-	.itinerary-timeline {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.event-card {
-		display: flex;
-		align-items: center;
-		padding: 12px 16px;
-		background: var(--bg-surface);
-		border: 1px solid var(--border-default);
-		border-radius: var(--radius-md);
-		gap: 16px;
-		transition: border-color 0.15s ease;
-	}
-
-	.event-card:hover {
-		border-color: var(--border-hover);
-	}
-
-	.time-col {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		align-items: flex-start;
-		min-width: 90px;
-	}
-
-	.day-badge {
-		font-size: 0.725rem;
-		font-weight: 700;
-		background: var(--bg-subtle);
-		color: var(--text-main);
-		padding: 2px 7px;
-		border-radius: var(--radius-sm);
-	}
-
-	.time-badge {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--color-emerald);
-		font-family: var(--font-mono);
-	}
-
-	.event-main {
-		flex: 1;
-	}
-
-	.event-title {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	.event-description {
-		font-size: 0.85rem;
-		color: var(--text-secondary);
-		margin-top: 2px;
-	}
-
-	.event-actions {
-		display: flex;
-		gap: 2px;
-	}
-
-	.btn-icon:disabled {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-
-	.btn-danger-hover:hover:not(:disabled) {
-		color: var(--color-danger);
-		background: var(--color-danger-light);
-	}
-
-	/* Inline Edit Box */
-	.edit-event-block {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		width: 100%;
-	}
-
-	.edit-top-row {
-		display: flex;
-		gap: 8px;
-	}
-
-	.edit-day-num {
-		width: 60px;
-	}
-
-	.edit-time-str {
-		width: 130px;
-	}
-
-	.edit-title-str {
-		flex: 1;
-	}
-
-	.edit-desc-str {
-		width: 100%;
-	}
-
-	.edit-actions {
-		display: flex;
-		gap: 8px;
-	}
-
-	.empty-state {
-		text-align: center;
-		padding: 36px 16px;
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 640px) {
-		.event-card {
-			flex-direction: column;
-			align-items: flex-start;
-			padding: 14px;
-			gap: 12px;
-		}
-
-		.time-col {
-			min-width: auto;
-			flex-direction: row;
-			align-items: center;
-			gap: 8px;
-		}
-
-		.event-actions {
-			align-self: flex-end;
-			gap: 6px;
-		}
-
-		.event-actions .btn-icon {
-			min-width: 40px;
-			min-height: 40px;
-			padding: 10px;
-		}
-
-		.day-filter-pill {
-			min-height: 38px;
-			display: inline-flex;
-			align-items: center;
-			padding: 6px 14px;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.edit-top-row {
-			flex-direction: column;
-		}
-
-		.edit-day-num,
-		.edit-time-str,
-		.edit-title-str {
-			width: 100%;
-		}
-
-		.notes-row {
-			flex-direction: column;
-		}
-
-		.notes-row .btn {
-			width: 100%;
-		}
-	}
-</style>
