@@ -517,5 +517,178 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": ""
+  },
+  {
+    "id": "_pb_users_auth_",
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cost": 0,
+        "hidden": true,
+        "id": "password901924565",
+        "max": 0,
+        "min": 8,
+        "name": "password",
+        "pattern": "",
+        "presentable": false,
+        "required": true,
+        "system": true,
+        "type": "password"
+      },
+      {
+        "autogeneratePattern": "[a-zA-Z0-9]{50}",
+        "max": 0,
+        "min": 0,
+        "name": "tokenKey",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "hidden": false,
+        "id": "email3885137012",
+        "name": "email",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": true,
+        "system": true,
+        "type": "email"
+      },
+      {
+        "hidden": false,
+        "id": "bool1547992823",
+        "name": "emailVisibility",
+        "presentable": false,
+        "required": false,
+        "system": true,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "bool2564456476",
+        "name": "verified",
+        "presentable": false,
+        "required": false,
+        "system": true,
+        "type": "bool"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1579384326",
+        "max": 255,
+        "min": 0,
+        "name": "name",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+      "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": null,
+    "updateRule": "@request.auth.id = id",
+    "deleteRule": null,
+    "authRule": "",
+    "manageRule": null,
+    "authAlert": {
+      "enabled": false,
+      "emailTemplate": {
+        "body": "<p>Login alert</p>",
+        "subject": "Login from new device"
+      }
+    },
+    "oauth2": {
+      "mappedFields": {
+        "avatarURL": "",
+        "id": "",
+        "name": "name",
+        "username": ""
+      },
+      "enabled": false,
+      "providers": []
+    },
+    "passwordAuth": {
+      "enabled": true,
+      "identityFields": [
+        "email"
+      ]
+    },
+    "mfa": {
+      "duration": 1800,
+      "enabled": false,
+      "rule": ""
+    },
+    "otp": {
+      "duration": 180,
+      "emailTemplate": {
+        "body": "<p>OTP code: {OTP}</p>",
+        "subject": "OTP code"
+      },
+      "enabled": false,
+      "length": 6
+    },
+    "authToken": {
+      "duration": 604800
+    },
+    "passwordResetToken": {
+      "duration": 1800
+    },
+    "emailChangeToken": {
+      "duration": 1800
+    },
+    "fileToken": {
+      "duration": 180
+    },
+    "verificationToken": {
+      "duration": 604800
+    }
   }
 ]

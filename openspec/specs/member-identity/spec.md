@@ -5,7 +5,7 @@ Provides lightweight identity for trip members without requiring accounts, passw
 ## Requirements
 
 ### Requirement: First-visit name prompt
-The system SHALL prompt a visitor to identify themselves when they open a trip workspace without a stored identity for that trip, allowing them to either select/claim their existing member profile or join with a new name.
+The system SHALL prompt a visitor to identify themselves when they open a trip workspace without a stored identity for that trip, allowing them to either select/claim their existing member profile or join with a new name, without requiring user account authentication.
 
 #### Scenario: New visitor opens trip
 - **WHEN** a visitor opens a trip URL and has no member identity stored in localStorage for that trip

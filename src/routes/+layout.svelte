@@ -8,7 +8,10 @@
 
 <div class="app-layout">
 	<a href="#main-content" class="skip-link">Skip to main content</a>
-	{@render children()}
+
+	<div class="main-content-wrapper">
+		{@render children()}
+	</div>
 
 	{#if $toast}
 		<div class="toast-wrapper" aria-live="polite" role="status">
@@ -33,6 +36,12 @@
 		flex-direction: column;
 	}
 
+	.main-content-wrapper {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
 	.toast-wrapper {
 		position: fixed;
 		bottom: 24px;
@@ -47,7 +56,7 @@
 		align-items: center;
 		gap: 10px;
 		padding: 10px 16px;
-		border-radius: var(--radius-full);
+		border-radius: var(--radius-full, 9999px);
 		font-weight: 500;
 		font-size: 0.875rem;
 		background: #0f172a;
