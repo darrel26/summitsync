@@ -2,13 +2,8 @@
 	import * as Dialog from "$lib/components/ui/dialog";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Input from "$lib/components/ui/input/Input.svelte";
+	import type { Member } from "$lib/types";
 	import { Sparkles, User, ArrowRight, UserCheck } from "lucide-svelte";
-
-	interface Member {
-		id: string;
-		name: string;
-		role?: string;
-	}
 
 	interface Props {
 		open?: boolean;
@@ -70,7 +65,7 @@
 					{#each members as member}
 						<button
 							type="button"
-							class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+							class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer"
 							onclick={() => handleSelectMember(member)}
 							disabled={submitting}
 						>

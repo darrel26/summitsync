@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { pb } from "$lib/pb.js";
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
 	import { AppHeader } from "$lib/components/ui/app-header";
 	import { PageContainer } from "$lib/components/ui/page-container";
 	import * as Card from "$lib/components/ui/card";
@@ -9,6 +9,7 @@
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
 	import { EmptyState } from "$lib/components/ui/empty-state";
 	import CreateTripModal from "$lib/components/CreateTripModal.svelte";
+	import type { Trip } from "$lib/types";
 	import {
 		Plus,
 		Calendar,
@@ -20,20 +21,13 @@
 		Sparkles,
 	} from "lucide-svelte";
 
-	interface TripRecord {
-		id: string;
-		name: string;
-		date?: string;
-		description?: string;
-	}
-
 	interface TripStats {
 		members: number;
 		items: number;
 		stops: number;
 	}
 
-	let trips = $state<TripRecord[]>([]);
+	let trips = $state<Trip[]>([]);
 	let tripStats = $state<Record<string, TripStats>>({});
 	let loading = $state(true);
 	let isCreateModalOpen = $state(false);
@@ -73,7 +67,7 @@
 		try {
 			const list = await pb
 				.collection("trips")
-				.getFullList<TripRecord>({ sort: "-created" });
+				.getFullList<Trip>({ sort: "-created" });
 			trips = list;
 			fetchTripCounts(list);
 		} catch (err) {
@@ -84,10 +78,9 @@
 		}
 	}
 
-	async function fetchTripCounts(tripList: TripRecord[]) {
-		const statsMap: Record<string, TripStats> = {};
-		for (const t of tripList) {
-			try {
+	async function fetchTripCounts(tripList: Trip[]) {
+		const results = await Promise.allSettled(
+			tripList.map(async (t) => {
 				const [membersRes, groupRes, routeRes] = await Promise.all([
 					pb
 						.collection("members")
@@ -102,13 +95,21 @@
 						.getList(1, 1, { filter: `trip = "${t.id}"` })
 						.catch(() => ({ totalItems: 0 })),
 				]);
-				statsMap[t.id] = {
-					members: membersRes.totalItems || 0,
-					items: groupRes.totalItems || 0,
-					stops: routeRes.totalItems || 0,
+				return {
+					id: t.id,
+					stats: {
+						members: membersRes.totalItems || 0,
+						items: groupRes.totalItems || 0,
+						stops: routeRes.totalItems || 0,
+					},
 				};
-			} catch {
-				statsMap[t.id] = { members: 0, items: 0, stops: 0 };
+			}),
+		);
+
+		const statsMap: Record<string, TripStats> = {};
+		for (const res of results) {
+			if (res.status === "fulfilled") {
+				statsMap[res.value.id] = res.value.stats;
 			}
 		}
 		tripStats = statsMap;

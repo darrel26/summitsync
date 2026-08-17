@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
+	import { swapSortOrder } from "$lib/utils";
 	import * as Card from "$lib/components/ui/card";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Input from "$lib/components/ui/input/Input.svelte";
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
+	import type { RouteStop } from "$lib/types";
 	import {
 		Plus,
 		ChevronUp,
@@ -15,19 +17,12 @@
 		MapPin,
 	} from "lucide-svelte";
 
-	interface RouteStop {
-		id: string;
-		label: string;
-		description?: string;
-		sort_order?: number;
-	}
-
 	interface Props {
 		routeStops?: RouteStop[];
 		isOwner?: boolean;
-		onAddStop: (data: any) => Promise<any>;
-		onUpdateStop: (id: string, data: any) => Promise<any>;
-		onDeleteStop: (id: string) => Promise<any>;
+		onAddStop: (data: Partial<RouteStop>) => Promise<unknown>;
+		onUpdateStop: (id: string, data: Partial<RouteStop>) => Promise<unknown>;
+		onDeleteStop: (id: string) => Promise<unknown>;
 	}
 
 	let {
@@ -113,24 +108,8 @@
 
 	async function moveStop(index: number, direction: number) {
 		const targetIndex = index + direction;
-		if (targetIndex < 0 || targetIndex >= sortedStops.length) return;
-
-		const currentItem = sortedStops[index];
-		const targetItem = sortedStops[targetIndex];
-
 		try {
-			const currentOrder = currentItem.sort_order ?? index;
-			const targetOrder = targetItem.sort_order ?? targetIndex;
-
-			const newCurrentOrder =
-				currentOrder === targetOrder ? targetIndex : targetOrder;
-			const newTargetOrder =
-				currentOrder === targetOrder ? index : currentOrder;
-
-			await Promise.all([
-				onUpdateStop(currentItem.id, { sort_order: newCurrentOrder }),
-				onUpdateStop(targetItem.id, { sort_order: newTargetOrder }),
-			]);
+			await swapSortOrder(sortedStops, index, targetIndex, onUpdateStop);
 		} catch (err) {
 			console.error("Error reordering stops:", err);
 			showToast("Failed to reorder stops", "error");

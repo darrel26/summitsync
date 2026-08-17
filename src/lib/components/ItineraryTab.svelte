@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
+	import { swapSortOrder } from "$lib/utils";
 	import * as Card from "$lib/components/ui/card";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Input from "$lib/components/ui/input/Input.svelte";
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
+	import type { ItineraryEntry } from "$lib/types";
 	import {
 		Plus,
 		ChevronUp,
@@ -16,21 +18,12 @@
 		Clock,
 	} from "lucide-svelte";
 
-	interface ItineraryEntry {
-		id: string;
-		day?: number;
-		title: string;
-		time?: string;
-		description?: string;
-		sort_order?: number;
-	}
-
 	interface Props {
 		itineraryEntries?: ItineraryEntry[];
 		isOwner?: boolean;
-		onAddEntry: (data: any) => Promise<any>;
-		onUpdateEntry: (id: string, data: any) => Promise<any>;
-		onDeleteEntry: (id: string) => Promise<any>;
+		onAddEntry: (data: Partial<ItineraryEntry>) => Promise<unknown>;
+		onUpdateEntry: (id: string, data: Partial<ItineraryEntry>) => Promise<unknown>;
+		onDeleteEntry: (id: string) => Promise<unknown>;
 	}
 
 	let {
@@ -144,24 +137,8 @@
 
 	async function moveEntry(index: number, direction: number) {
 		const targetIndex = index + direction;
-		if (targetIndex < 0 || targetIndex >= sortedEntries.length) return;
-
-		const currentItem = sortedEntries[index];
-		const targetItem = sortedEntries[targetIndex];
-
 		try {
-			const currentOrder = currentItem.sort_order ?? index;
-			const targetOrder = targetItem.sort_order ?? targetIndex;
-
-			const newCurrentOrder =
-				currentOrder === targetOrder ? targetIndex : targetOrder;
-			const newTargetOrder =
-				currentOrder === targetOrder ? index : currentOrder;
-
-			await Promise.all([
-				onUpdateEntry(currentItem.id, { sort_order: newCurrentOrder }),
-				onUpdateEntry(targetItem.id, { sort_order: newTargetOrder }),
-			]);
+			await swapSortOrder(filteredEntries, index, targetIndex, onUpdateEntry);
 		} catch (err) {
 			console.error("Error reordering itinerary:", err);
 			showToast("Failed to reorder itinerary", "error");

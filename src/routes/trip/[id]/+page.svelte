@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
+	import { tick } from "svelte";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import { pb } from "$lib/pb.js";
 	import { createTripCollectionStore } from "$lib/realtimeStore.js";
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
 	import { AppHeader } from "$lib/components/ui/app-header";
 	import { PageContainer } from "$lib/components/ui/page-container";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
 	import * as Card from "$lib/components/ui/card";
+	import type { Trip, Member, GroupItem, PersonalItem, RouteStop, ItineraryEntry } from "$lib/types";
 	import {
 		ChevronLeft,
 		Share2,
@@ -29,7 +31,7 @@
 
 	let tripId = $derived($page.params.id);
 
-	let trip = $state<any>(null);
+	let trip = $state<Trip | null>(null);
 	let loadingTrip = $state(true);
 	let activeTab = $state("checklist");
 
@@ -41,29 +43,29 @@
 	let verifyingPin = $state(false);
 	let deletingTrip = $state(false);
 
-	let membersStore: any;
-	let groupItemsStore: any;
-	let personalItemsStore: any;
-	let routeStore: any;
-	let itineraryStore: any;
+	let membersStore: ReturnType<typeof createTripCollectionStore>;
+	let groupItemsStore: ReturnType<typeof createTripCollectionStore>;
+	let personalItemsStore: ReturnType<typeof createTripCollectionStore>;
+	let routeStore: ReturnType<typeof createTripCollectionStore>;
+	let itineraryStore: ReturnType<typeof createTripCollectionStore>;
 
-	let members = $state<any[]>([]);
-	let groupItems = $state<any[]>([]);
-	let personalItems = $state<any[]>([]);
-	let routeStops = $state<any[]>([]);
-	let itineraryEntries = $state<any[]>([]);
+	let members = $state<Member[]>([]);
+	let groupItems = $state<GroupItem[]>([]);
+	let personalItems = $state<PersonalItem[]>([]);
+	let routeStops = $state<RouteStop[]>([]);
+	let itineraryEntries = $state<ItineraryEntry[]>([]);
 
-	let unsubMembers: any,
-		unsubGroup: any,
-		unsubPersonal: any,
-		unsubRoute: any,
-		unsubItinerary: any;
+	let unsubMembers: (() => void) | undefined;
+	let unsubGroup: (() => void) | undefined;
+	let unsubPersonal: (() => void) | undefined;
+	let unsubRoute: (() => void) | undefined;
+	let unsubItinerary: (() => void) | undefined;
 
 	async function fetchTrip() {
 		loadingTrip = true;
 		try {
-			trip = await pb.collection("trips").getOne(tripId);
-			checkPermissions();
+			trip = await pb.collection("trips").getOne<Trip>(tripId);
+			await checkPermissions();
 		} catch (err) {
 			console.error("Error fetching trip:", err);
 			showToast("Trip not found or network error", "error");
@@ -72,23 +74,18 @@
 		}
 	}
 
-	function checkPermissions() {
+	async function checkPermissions() {
 		const storedId = localStorage.getItem(`trip_member_${tripId}`);
 		const storedOwner = localStorage.getItem(`trip_is_owner_${tripId}`);
 
 		if (storedId) {
 			currentMemberId = storedId;
 		} else {
-			setTimeout(() => {
-				isNamePromptOpen = true;
-			}, 50);
+			await tick();
+			isNamePromptOpen = true;
 		}
 
-		if (storedOwner === "true") {
-			isOwner = true;
-		} else {
-			isOwner = false;
-		}
+		isOwner = storedOwner === "true";
 	}
 
 	async function handleJoinName(name: string) {
@@ -122,7 +119,7 @@
 		}
 	}
 
-	function handleClaimMember(member: any) {
+	function handleClaimMember(member: Member) {
 		currentMemberId = member.id;
 		localStorage.setItem(`trip_member_${tripId}`, member.id);
 		isNamePromptOpen = false;
@@ -177,65 +174,52 @@
 
 		deletingTrip = true;
 		try {
-			const [membersList, groupList, personalList, routeList, itinList] =
+			const [membersList, groupList, routeList, itinList] =
 				await Promise.all([
 					pb
 						.collection("members")
-						.getFullList({ filter: `trip = "${tripId}"` })
+						.getFullList<Member>({ filter: `trip = "${tripId}"` })
 						.catch(() => []),
 					pb
 						.collection("group_items")
-						.getFullList({ filter: `trip = "${tripId}"` })
-						.catch(() => []),
-					pb
-						.collection("personal_items")
-						.getFullList({
-							filter:
-								members
-									.map((m) => `member = "${m.id}"`)
-									.join(" || ") || 'id = ""',
-						})
+						.getFullList<GroupItem>({ filter: `trip = "${tripId}"` })
 						.catch(() => []),
 					pb
 						.collection("route")
-						.getFullList({ filter: `trip = "${tripId}"` })
+						.getFullList<RouteStop>({ filter: `trip = "${tripId}"` })
 						.catch(() => []),
 					pb
 						.collection("itinerary")
-						.getFullList({ filter: `trip = "${tripId}"` })
+						.getFullList<ItineraryEntry>({ filter: `trip = "${tripId}"` })
 						.catch(() => []),
 				]);
 
+			const memberIds = membersList.map((m) => m.id);
+			let personalList: PersonalItem[] = [];
+			if (memberIds.length > 0) {
+				personalList = await pb
+					.collection("personal_items")
+					.getFullList<PersonalItem>({
+						filter: memberIds.map((id) => `member = "${id}"`).join(" || "),
+					})
+					.catch(() => []);
+			}
+
 			await Promise.all([
-				...groupList.map((i: any) =>
-					pb
-						.collection("group_items")
-						.delete(i.id)
-						.catch(() => {}),
+				...groupList.map((i) =>
+					pb.collection("group_items").delete(i.id).catch(() => {}),
 				),
-				...personalList.map((i: any) =>
-					pb
-						.collection("personal_items")
-						.delete(i.id)
-						.catch(() => {}),
+				...personalList.map((i) =>
+					pb.collection("personal_items").delete(i.id).catch(() => {}),
 				),
-				...routeList.map((i: any) =>
-					pb
-						.collection("route")
-						.delete(i.id)
-						.catch(() => {}),
+				...routeList.map((i) =>
+					pb.collection("route").delete(i.id).catch(() => {}),
 				),
-				...itinList.map((i: any) =>
-					pb
-						.collection("itinerary")
-						.delete(i.id)
-						.catch(() => {}),
+				...itinList.map((i) =>
+					pb.collection("itinerary").delete(i.id).catch(() => {}),
 				),
-				...membersList.map((i: any) =>
-					pb
-						.collection("members")
-						.delete(i.id)
-						.catch(() => {}),
+				...membersList.map((i) =>
+					pb.collection("members").delete(i.id).catch(() => {}),
 				),
 			]);
 
@@ -289,6 +273,7 @@
 			tripId,
 			{
 				filterField: "",
+				getMemberIds: () => members.map((m) => m.id),
 			},
 		);
 		routeStore = createTripCollectionStore("route", tripId, {
@@ -298,17 +283,11 @@
 			sort: "sort_order",
 		});
 
-		unsubMembers = membersStore.subscribe((val: any[]) => (members = val));
-		unsubGroup = groupItemsStore.subscribe(
-			(val: any[]) => (groupItems = val),
-		);
-		unsubPersonal = personalItemsStore.subscribe(
-			(val: any[]) => (personalItems = val),
-		);
-		unsubRoute = routeStore.subscribe((val: any[]) => (routeStops = val));
-		unsubItinerary = itineraryStore.subscribe(
-			(val: any[]) => (itineraryEntries = val),
-		);
+		unsubMembers = membersStore.subscribe((val) => (members = val as Member[]));
+		unsubGroup = groupItemsStore.subscribe((val) => (groupItems = val as GroupItem[]));
+		unsubPersonal = personalItemsStore.subscribe((val) => (personalItems = val as PersonalItem[]));
+		unsubRoute = routeStore.subscribe((val) => (routeStops = val as RouteStop[]));
+		unsubItinerary = itineraryStore.subscribe((val) => (itineraryEntries = val as ItineraryEntry[]));
 
 		membersStore.init();
 		groupItemsStore.init();
@@ -318,17 +297,17 @@
 	});
 
 	onDestroy(() => {
-		if (unsubMembers) unsubMembers();
-		if (unsubGroup) unsubGroup();
-		if (unsubPersonal) unsubPersonal();
-		if (unsubRoute) unsubRoute();
-		if (unsubItinerary) unsubItinerary();
+		unsubMembers?.();
+		unsubGroup?.();
+		unsubPersonal?.();
+		unsubRoute?.();
+		unsubItinerary?.();
 
-		if (membersStore) membersStore.unsubscribe();
-		if (groupItemsStore) groupItemsStore.unsubscribe();
-		if (personalItemsStore) personalItemsStore.unsubscribe();
-		if (routeStore) routeStore.unsubscribe();
-		if (itineraryStore) itineraryStore.unsubscribe();
+		membersStore?.unsubscribe();
+		groupItemsStore?.unsubscribe();
+		personalItemsStore?.unsubscribe();
+		routeStore?.unsubscribe();
+		itineraryStore?.unsubscribe();
 	});
 </script>
 
@@ -476,17 +455,17 @@
 						{members}
 						{currentMemberId}
 						{isOwner}
-						onAddGroupItem={(data: any) =>
+						onAddGroupItem={(data) =>
 							groupItemsStore.create(data)}
-						onUpdateGroupItem={(id: string, data: any) =>
+						onUpdateGroupItem={(id, data) =>
 							groupItemsStore.updateRecord(id, data)}
-						onDeleteGroupItem={(id: string) =>
+						onDeleteGroupItem={(id) =>
 							groupItemsStore.deleteRecord(id)}
-						onAddPersonalItem={(data: any) =>
+						onAddPersonalItem={(data) =>
 							personalItemsStore.create(data)}
-						onUpdatePersonalItem={(id: string, data: any) =>
+						onUpdatePersonalItem={(id, data) =>
 							personalItemsStore.updateRecord(id, data)}
-						onDeletePersonalItem={(id: string) =>
+						onDeletePersonalItem={(id) =>
 							personalItemsStore.deleteRecord(id)}
 					/>
 				{:else if activeTab === "members"}
@@ -502,20 +481,20 @@
 					<RouteTab
 						{routeStops}
 						{isOwner}
-						onAddStop={(data: any) => routeStore.create(data)}
-						onUpdateStop={(id: string, data: any) =>
+						onAddStop={(data) => routeStore.create(data)}
+						onUpdateStop={(id, data) =>
 							routeStore.updateRecord(id, data)}
-						onDeleteStop={(id: string) =>
+						onDeleteStop={(id) =>
 							routeStore.deleteRecord(id)}
 					/>
 				{:else if activeTab === "itinerary"}
 					<ItineraryTab
 						{itineraryEntries}
 						{isOwner}
-						onAddEntry={(data: any) => itineraryStore.create(data)}
-						onUpdateEntry={(id: string, data: any) =>
+						onAddEntry={(data) => itineraryStore.create(data)}
+						onUpdateEntry={(id, data) =>
 							itineraryStore.updateRecord(id, data)}
-						onDeleteEntry={(id: string) =>
+						onDeleteEntry={(id) =>
 							itineraryStore.deleteRecord(id)}
 					/>
 				{/if}

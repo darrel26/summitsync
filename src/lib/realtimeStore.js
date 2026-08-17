@@ -2,24 +2,26 @@ import { writable } from 'svelte/store';
 import { pb } from './pb.js';
 
 /**
- * Creates a reactive real-time store for a PocketBase collection filtered by trip ID.
- * Automatically handles initial fetch, SSE subscriptions (create/update/delete),
- * and unsubscribing.
+ * Creates a reactive real-time store for a PocketBase collection filtered by trip ID or member IDs.
  *
+ * @template T
  * @param {string} collectionName - Name of the PocketBase collection
  * @param {string} tripId - ID of the trip to filter by
  * @param {Object} [options]
- * @param {string} [options.sort] - Sort order string (e.g. 'sort_order,created' or '-created')
- * @param {string} [options.expand] - Expand relations (e.g. 'assigned_to,member')
+ * @param {string} [options.sort] - Sort order string
+ * @param {string} [options.expand] - Expand relations
  * @param {string} [options.filterField='trip'] - The field linking record to the trip
+ * @param {() => string[]} [options.getMemberIds] - Optional member IDs provider for personal items
  */
 export function createTripCollectionStore(collectionName, tripId, options = {}) {
-	const { sort = '', expand = '', filterField = 'trip' } = options;
+	const { sort = '', expand = '', filterField = 'trip', getMemberIds } = options;
 	const { subscribe, set, update } = writable([]);
 	const loading = writable(true);
 	const error = writable(null);
 
+	let isSubscribing = false;
 	let isSubscribed = false;
+	let unsubscribeFn = null;
 
 	async function init() {
 		if (!tripId) return;
@@ -27,10 +29,16 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 		error.set(null);
 
 		try {
-			// Construct filter
-			const filter = filterField ? `${filterField} = "${tripId}"` : '';
+			let filter = '';
+			if (filterField) {
+				filter = `${filterField} = "${tripId}"`;
+			} else if (getMemberIds) {
+				const memberIds = getMemberIds();
+				if (memberIds.length > 0) {
+					filter = memberIds.map((id) => `member = "${id}"`).join(' || ');
+				}
+			}
 
-			// Initial fetch
 			const records = await pb.collection(collectionName).getFullList({
 				filter: filter || undefined,
 				sort: sort || undefined,
@@ -41,38 +49,43 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 			set(records);
 			loading.set(false);
 
-			// Real-time SSE subscription
-			// PocketBase allows filtering topics or handling actions client-side
-			if (!isSubscribed) {
-				isSubscribed = true;
-				pb.collection(collectionName).subscribe('*', (e) => {
-					// Verify record belongs to this trip if filterField is present
-					const recordTripId = filterField ? e.record[filterField] : null;
-
-					if (filterField && recordTripId && recordTripId !== tripId) {
-						return;
-					}
-
-					update((currentList) => {
-						if (e.action === 'create') {
-							// Avoid duplicates
-							if (currentList.some((item) => item.id === e.record.id)) {
-								return currentList.map((item) => (item.id === e.record.id ? e.record : item));
+			if (!isSubscribed && !isSubscribing) {
+				isSubscribing = true;
+				try {
+					unsubscribeFn = await pb.collection(collectionName).subscribe(
+						'*',
+						(e) => {
+							if (filterField) {
+								const recordTripId = e.record[filterField];
+								if (recordTripId && recordTripId !== tripId) return;
+							} else if (getMemberIds) {
+								const memberIds = getMemberIds();
+								const itemMember = e.record.member;
+								if (memberIds.length > 0 && !memberIds.includes(itemMember)) return;
 							}
-							return [...currentList, e.record];
-						} else if (e.action === 'update') {
-							return currentList.map((item) => (item.id === e.record.id ? e.record : item));
-						} else if (e.action === 'delete') {
-							return currentList.filter((item) => item.id !== e.record.id);
-						}
-						return currentList;
-					});
-				}, {
-					expand: expand || undefined
-				}).catch((err) => {
+
+							update((currentList) => {
+								if (e.action === 'create') {
+									if (currentList.some((item) => item.id === e.record.id)) {
+										return currentList.map((item) => (item.id === e.record.id ? e.record : item));
+									}
+									return [...currentList, e.record];
+								} else if (e.action === 'update') {
+									return currentList.map((item) => (item.id === e.record.id ? e.record : item));
+								} else if (e.action === 'delete') {
+									return currentList.filter((item) => item.id !== e.record.id);
+								}
+								return currentList;
+							});
+						},
+						{ expand: expand || undefined }
+					);
+					isSubscribed = true;
+				} catch (err) {
 					console.error(`Error subscribing to ${collectionName}:`, err);
-					isSubscribed = false;
-				});
+				} finally {
+					isSubscribing = false;
+				}
 			}
 		} catch (err) {
 			console.error(`Error initializing store for ${collectionName}:`, err);
@@ -81,11 +94,15 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 		}
 	}
 
-	function unsubscribeStore() {
-		if (isSubscribed) {
-			pb.collection(collectionName).unsubscribe('*').catch(() => { });
-			isSubscribed = false;
+	async function unsubscribeStore() {
+		if (unsubscribeFn) {
+			try {
+				await unsubscribeFn();
+			} catch (_) {}
+			unsubscribeFn = null;
 		}
+		isSubscribed = false;
+		isSubscribing = false;
 	}
 
 	return {
@@ -94,7 +111,6 @@ export function createTripCollectionStore(collectionName, tripId, options = {}) 
 		error: { subscribe: error.subscribe },
 		init,
 		unsubscribe: unsubscribeStore,
-		// Helper direct mutations with optimistic/standard fallback
 		async create(data) {
 			const payload = filterField && !data[filterField] ? { ...data, [filterField]: tripId } : { ...data };
 			return await pb.collection(collectionName).create(payload, { expand: expand || undefined });

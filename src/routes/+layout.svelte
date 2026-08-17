@@ -1,5 +1,5 @@
-<script>
-	import { toast } from "$lib/toast.js";
+<script lang="ts">
+	import { toast } from "$lib/toast";
 	import { CheckCircle2, AlertCircle, Info } from "lucide-svelte";
 	import "../app.css";
 

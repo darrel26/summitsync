@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
 	import * as Card from "$lib/components/ui/card";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Input from "$lib/components/ui/input/Input.svelte";
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
 	import Checkbox from "$lib/components/ui/checkbox/Checkbox.svelte";
+	import type { Member, GroupItem, PersonalItem } from "$lib/types";
 	import {
 		Tent,
 		Backpack,
@@ -16,39 +17,18 @@
 		CheckCircle2,
 	} from "lucide-svelte";
 
-	interface Member {
-		id: string;
-		name: string;
-		role?: string;
-	}
-
-	interface GroupItem {
-		id: string;
-		name: string;
-		qty?: number;
-		packed?: boolean;
-		assigned_to?: string | null;
-	}
-
-	interface PersonalItem {
-		id: string;
-		name: string;
-		packed?: boolean;
-		member: string;
-	}
-
 	interface Props {
 		groupItems?: GroupItem[];
 		personalItems?: PersonalItem[];
 		members?: Member[];
 		currentMemberId?: string;
 		isOwner?: boolean;
-		onAddGroupItem: (data: any) => Promise<any>;
-		onUpdateGroupItem: (id: string, data: any) => Promise<any>;
-		onDeleteGroupItem: (id: string) => Promise<any>;
-		onAddPersonalItem: (data: any) => Promise<any>;
-		onUpdatePersonalItem: (id: string, data: any) => Promise<any>;
-		onDeletePersonalItem: (id: string) => Promise<any>;
+		onAddGroupItem: (data: Partial<GroupItem>) => Promise<unknown>;
+		onUpdateGroupItem: (id: string, data: Partial<GroupItem>) => Promise<unknown>;
+		onDeleteGroupItem: (id: string) => Promise<unknown>;
+		onAddPersonalItem: (data: Partial<PersonalItem>) => Promise<unknown>;
+		onUpdatePersonalItem: (id: string, data: Partial<PersonalItem>) => Promise<unknown>;
+		onDeletePersonalItem: (id: string) => Promise<unknown>;
 	}
 
 	let {
@@ -128,7 +108,7 @@
 			await onUpdateGroupItem(id, {
 				name: editGroupName.trim(),
 				qty: Number(editGroupQty) || 1,
-				assigned_to: editGroupAssigned || null,
+				assigned_to: editGroupAssigned || undefined,
 			});
 			editingGroupId = null;
 			showToast("Item updated", "success");
@@ -155,7 +135,7 @@
 	) {
 		try {
 			await onUpdateGroupItem(item.id, {
-				assigned_to: newAssigneeId || null,
+				assigned_to: newAssigneeId || undefined,
 			});
 		} catch (err) {
 			console.error("Error assigning item:", err);
@@ -417,10 +397,10 @@
 										{#if isOwner}
 											<select
 												value={item.assigned_to || ""}
-												onchange={(e: any) =>
+												onchange={(e: Event) =>
 													updateGroupAssignment(
 														item,
-														e.target.value,
+														(e.target as HTMLSelectElement).value,
 													)}
 												class="h-7 rounded-md border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700 outline-none hover:bg-slate-100 {item.assigned_to
 													? 'font-semibold text-emerald-800 bg-emerald-50 border-emerald-200'
@@ -546,7 +526,7 @@
 							</div>
 							<span class="text-xs font-semibold text-slate-500"
 								>{packedCount}/{memberItems.length}</span
-							>
+						>
 						</Card.CardHeader>
 
 						<Card.CardContent class="p-4 pt-2 space-y-3">

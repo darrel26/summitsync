@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { showToast } from "$lib/toast.js";
+	import { showToast } from "$lib/toast";
 	import * as Card from "$lib/components/ui/card";
 	import Button from "$lib/components/ui/button/Button.svelte";
 	import Input from "$lib/components/ui/input/Input.svelte";
 	import Badge from "$lib/components/ui/badge/Badge.svelte";
+	import type { Member } from "$lib/types";
 	import {
 		UserPlus,
 		Trash2,
@@ -13,18 +14,12 @@
 		ArrowRightLeft,
 	} from "lucide-svelte";
 
-	interface Member {
-		id: string;
-		name: string;
-		role?: string;
-	}
-
 	interface Props {
 		members?: Member[];
 		currentMemberId?: string;
 		isOwner?: boolean;
-		onAddMember: (name: string) => Promise<any>;
-		onRemoveMember: (id: string) => Promise<any>;
+		onAddMember: (name: string) => Promise<unknown>;
+		onRemoveMember: (id: string) => Promise<unknown>;
 		onSwitchIdentity?: () => void;
 	}
 
